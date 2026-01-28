@@ -1,0 +1,5 @@
+{
+  "name": "Lyrical Editor Plus - Universal Lyrics / Subtitle Editor",
+  "description": "A sleek, modern, and mobile-friendly editor for subtitles and lyrics. Supports LRC, SRT, VTT, and TTML with advanced line and word-level timing adjustments.",
+  "requestFramePermissions": []
+}
