@@ -48,17 +48,27 @@ export const transcribeAudio = async (
 
   const isWordsMode = options.mode === 'words';
   
+  const timingInstructions = `
+    IMPORTANT TIMING RULES:
+    1. Timestamps must be ABSOLUTE integers in MILLISECONDS from the very start of the file.
+    2. Do NOT reset timestamps at any point. They must strictly increase.
+    3. Correctly calculate time > 1 minute.
+       - 1 minute = 60000 ms
+       - 1 minute 30 seconds = 90000 ms
+       - 2 minutes = 120000 ms
+  `;
+
   const prompt = isWordsMode 
-    ? `Transcribe the audio accurately. 
+    ? `Transcribe the audio accurately into lyrics/subtitles. 
        Return a JSON array of cues. 
        Each cue represents a LINE of lyrics/speech.
        Crucially, for EACH line, include a "words" array containing every word with its specific start and end timestamp.
-       Timestamps must be in MILLISECONDS (integer).
+       ${timingInstructions}
        Keep the text verbatim/raw (include fillers if present).`
-    : `Transcribe the audio accurately. 
+    : `Transcribe the audio accurately into lyrics/subtitles. 
        Return a JSON array of cues where each cue is a sentence or subtitle line.
        Each cue must have 'start' (ms), 'end' (ms), and 'text'.
-       Timestamps must be in MILLISECONDS (integer).
+       ${timingInstructions}
        Keep the text verbatim/raw.`;
 
   // Define Schema

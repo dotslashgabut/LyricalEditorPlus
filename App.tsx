@@ -829,56 +829,55 @@ export function App() {
 
         {/* Main Card */}
         <div className={`
-          max-w-2xl lg:max-w-2xl w-full rounded-3xl p-6 md:p-8 transition-all duration-300 relative
+          max-w-lg w-full rounded-3xl p-6 transition-all duration-300 relative
           ${dragging ? 'bg-primary-50 dark:bg-primary-900/20 scale-105 shadow-2xl border-2 border-dashed border-primary-500' : 'bg-white dark:bg-neutral-900 shadow-xl border border-neutral-200 dark:border-neutral-800'}
         `}>
-          <div className="flex flex-col items-center text-center mb-6">
-              <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-orange-600 rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg shadow-primary-500/20">
+          <div className="flex flex-col items-center text-center mb-5">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-orange-600 rounded-2xl flex items-center justify-center text-white mb-3 shadow-lg shadow-primary-500/20">
                 <Music size={32} />
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-500 mb-2 py-1">
+              <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-500 mb-1 py-1">
                 Lyrical Editor Plus
               </h1>
-              <p className="text-neutral-500 dark:text-neutral-400 text-base max-w-lg">
+              <p className="text-neutral-500 dark:text-neutral-400 text-sm max-w-sm">
                 The modern way to create, edit, and sync lyrics. <br/> AI-powered transcription & generation.
               </p>
           </div>
 
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-5">
               <div className="bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl flex gap-1">
                   <button 
                     onClick={() => setHomeTab('upload')} 
-                    className={`px-6 py-2 rounded-lg text-sm font-medium transition ${homeTab === 'upload' ? 'bg-white dark:bg-neutral-700 shadow text-neutral-900 dark:text-white' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
+                    className={`px-4 py-2 rounded-lg text-xs md:text-sm font-medium transition ${homeTab === 'upload' ? 'bg-white dark:bg-neutral-700 shadow text-neutral-900 dark:text-white' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
                   >
-                    Open File
+                    Open
                   </button>
                   <button 
                     onClick={() => setHomeTab('generate')} 
-                    className={`px-6 py-2 rounded-lg text-sm font-medium transition ${homeTab === 'generate' ? 'bg-white dark:bg-neutral-700 shadow text-primary-600 dark:text-primary-400' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
+                    className={`px-4 py-2 rounded-lg text-xs md:text-sm font-medium transition ${homeTab === 'generate' ? 'bg-white dark:bg-neutral-700 shadow text-primary-600 dark:text-primary-400' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
                   >
                     AI Generate
                   </button>
                   <button 
                     onClick={() => setHomeTab('transcribe')} 
-                    className={`px-6 py-2 rounded-lg text-sm font-medium transition ${homeTab === 'transcribe' ? 'bg-white dark:bg-neutral-700 shadow text-green-600 dark:text-green-300' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
+                    className={`px-4 py-2 rounded-lg text-xs md:text-sm font-medium transition ${homeTab === 'transcribe' ? 'bg-white dark:bg-neutral-700 shadow text-green-600 dark:text-green-300' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
                   >
                     Transcribe
                   </button>
               </div>
           </div>
 
-          <div className="min-h-[200px] flex flex-col items-center justify-center">
+          <div className="min-h-[140px] flex flex-col items-center justify-center">
             {homeTab === 'upload' && (
-                <div className="w-full max-w-md flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="flex flex-col items-center justify-center p-6 text-center border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-2xl bg-neutral-50 dark:bg-neutral-800/50 hover:border-blue-500 transition group cursor-pointer"
+                <div className="w-full max-w-sm flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex flex-col items-center justify-center p-5 text-center border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 hover:border-blue-500 transition group cursor-pointer"
                          onClick={() => document.getElementById('open-file-upload')?.click()}
                     >
-                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <FolderOpen size={24} />
+                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <FolderOpen size={20} />
                         </div>
-                        <h3 className="text-base font-bold mb-1">Open File</h3>
-                        <p className="text-xs text-neutral-500 max-w-xs">Drag & drop or click to browse</p>
-                        <p className="text-[10px] text-neutral-400 mt-2">Supports LRC, SRT, VTT, TTML, JSON, Audio, Video</p>
+                        <h3 className="text-sm font-bold mb-0.5">Open File</h3>
+                        <p className="text-[10px] text-neutral-500">Supports LRC, SRT, VTT, etc.</p>
                         
                         <input 
                             id="open-file-upload"
@@ -892,28 +891,28 @@ export function App() {
 
                     <button 
                         onClick={handleCreateBlank}
-                        className="w-full py-3 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-sm"
+                        className="w-full py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 shadow-sm"
                     >
-                        <FilePlus size={18} /> Create Blank File
+                        <FilePlus size={16} /> Create Blank
                     </button>
                 </div>
             )}
             {homeTab === 'generate' && (
-                <div className="w-full max-w-md flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="bg-primary-50 dark:bg-primary-900/10 p-4 rounded-xl border border-primary-100 dark:border-primary-800/30">
-                        <label className="block text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-2">Prompt / Topic</label>
+                <div className="w-full max-w-sm flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="bg-primary-50 dark:bg-primary-900/10 p-3 rounded-xl border border-primary-100 dark:border-primary-800/30">
+                        <label className="block text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-1.5">Prompt / Topic</label>
                         <textarea 
                             value={genPrompt}
                             onChange={(e) => setGenPrompt(e.target.value)}
-                            placeholder="A pop song about neon lights and midnight drives..."
-                            className="w-full bg-white dark:bg-neutral-800 border border-primary-200 dark:border-primary-800 rounded-lg p-3 text-base outline-none focus:ring-2 focus:ring-primary-500 min-h-[100px] resize-none"
+                            placeholder="A pop song about neon lights..."
+                            className="w-full bg-white dark:bg-neutral-800 border border-primary-200 dark:border-primary-800 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 min-h-[80px] resize-none"
                         />
                     </div>
                     <div className="flex gap-2">
                         <select 
                             value={genModel}
                             onChange={(e) => setGenModel(e.target.value)}
-                            className="flex-1 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3 text-sm outline-none"
+                            className="flex-1 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-2 text-xs outline-none"
                         >
                             <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                             <option value="gemini-3-flash-preview">Gemini 3.0 Flash</option>
@@ -922,76 +921,74 @@ export function App() {
                         <button 
                             onClick={handleHomeGenerate}
                             disabled={isGenerating || !genPrompt}
-                            className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-3 rounded-xl font-semibold shadow-lg shadow-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles size={18} />}
+                            {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                             Generate
                         </button>
                     </div>
                 </div>
             )}
             {homeTab === 'transcribe' && (
-                <div className="w-full max-w-md flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="w-full max-w-sm flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                     {mediaName ? (
                         <>
-                            <div className="flex items-center gap-3 p-3 bg-neutral-100 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700">
-                                <div className="w-10 h-10 bg-white dark:bg-neutral-700 rounded-lg flex items-center justify-center text-neutral-500">
-                                    {mediaType === 'video' ? <Video size={20} /> : <Music size={20} />}
+                            <div className="flex items-center gap-3 p-2.5 bg-neutral-100 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700">
+                                <div className="w-8 h-8 bg-white dark:bg-neutral-700 rounded-lg flex items-center justify-center text-neutral-500">
+                                    {mediaType === 'video' ? <Video size={16} /> : <Music size={16} />}
                                 </div>
                                 <div className="flex-1 overflow-hidden">
-                                    <h4 className="font-medium truncate">{mediaName}</h4>
-                                    <p className="text-xs text-neutral-500">Ready to transcribe</p>
+                                    <h4 className="font-medium text-sm truncate">{mediaName}</h4>
+                                    <p className="text-[10px] text-neutral-500">Ready</p>
                                 </div>
                                 <button 
                                     onClick={removeMedia}
-                                    className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                                    className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                                     title="Remove Media"
                                 >
-                                    <Trash2 size={18} />
+                                    <Trash2 size={16} />
                                 </button>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-1 ml-1">Model</label>
                                     <select 
                                         value={transcribeModel}
                                         onChange={(e) => setTranscribeModel(e.target.value)}
-                                        className="w-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3 py-2.5 text-sm outline-none"
+                                        className="w-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-2 py-2 text-xs outline-none"
                                     >
                                         <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                                         <option value="gemini-3-flash-preview">Gemini 3.0 Flash</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-1 ml-1">Mode</label>
                                     <select 
                                         value={transcribeMode}
                                         onChange={(e) => setTranscribeMode(e.target.value as any)}
-                                        className="w-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3 py-2.5 text-sm outline-none"
+                                        className="w-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-2 py-2 text-xs outline-none"
                                     >
-                                        <option value="lines">Lines (Subtitle)</option>
-                                        <option value="words">Words (Karaoke)</option>
+                                        <option value="lines">Lines</option>
+                                        <option value="words">Words</option>
                                     </select>
                                 </div>
                             </div>
                             <button 
                                 onClick={handleHomeTranscribe}
                                 disabled={isTranscribing}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold shadow-lg shadow-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                {isTranscribing ? <Loader2 className="animate-spin" /> : <Mic size={18} />}
-                                Start Transcription (RAW)
+                                {isTranscribing ? <Loader2 size={16} className="animate-spin" /> : <Mic size={16} />}
+                                Start Transcription
                             </button>
                         </>
                     ) : (
-                        <div className="flex flex-col items-center justify-center p-6 text-center border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-2xl bg-neutral-50 dark:bg-neutral-800/50 hover:border-green-500 transition group cursor-pointer"
+                        <div className="flex flex-col items-center justify-center p-5 text-center border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 hover:border-green-500 transition group cursor-pointer"
                              onClick={() => document.getElementById('transcribe-upload')?.click()}
                         >
-                           <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                              <FileAudio size={24} />
+                           <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                              <FileAudio size={20} />
                            </div>
-                           <h3 className="text-base font-bold mb-1">Drag & Drop Media</h3>
-                           <p className="text-xs text-neutral-500 max-w-xs mb-4">or click to upload audio/video</p>
+                           <h3 className="text-sm font-bold mb-0.5">Upload Media</h3>
+                           <p className="text-[10px] text-neutral-500">Audio or Video</p>
                            
                            <input 
                                 id="transcribe-upload"
