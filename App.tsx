@@ -61,7 +61,8 @@ import {
   VolumeX,
   WrapText,
   Link,
-  Scissors
+  Scissors,
+  Zap
 } from 'lucide-react';
 
 export function App() {
@@ -122,7 +123,7 @@ export function App() {
   // Home Page AI States
   const [homeTab, setHomeTab] = useState<'upload' | 'generate' | 'transcribe'>('upload');
   const [genPrompt, setGenPrompt] = useState('');
-  const [genModel, setGenModel] = useState('gemini-2.5-flash');
+  const [genModel, setGenModel] = useState('gemini-3-flash-preview');
   const [isGenerating, setIsGenerating] = useState(false);
   
   // Transcription States
@@ -326,6 +327,10 @@ export function App() {
           else newSelection.add(id);
       }
       setSelectedCueIds(newSelection);
+  };
+
+  const clearSelection = () => {
+      setSelectedCueIds(new Set());
   };
 
   // File Handling Logic
@@ -705,6 +710,62 @@ export function App() {
     }
   };
 
+  const handleHotFix = () => {
+    // 1. Compact Whitespace
+    let updated = cues.map(cue => ({
+        ...cue,
+        text: cue.text.replace(/\s+/g, ' ').trim(),
+        words: cue.words?.map(w => ({
+            ...w,
+            text: w.text.trim()
+        }))
+    }));
+
+    // 2. Remove Empty Words
+    updated = updated.map(cue => {
+        if (!cue.words || cue.words.length === 0) return cue;
+        const newWords = cue.words.filter(w => w.text.trim() !== '');
+        return { ...cue, words: newWords };
+    });
+
+    // 3. Fill Word Gaps
+    updated = updated.map(cue => {
+        if (!cue.words || cue.words.length === 0) return cue;
+        
+        // Sort words by start time
+        const sortedWords = [...cue.words].sort((a, b) => (a.start || 0) - (b.start || 0));
+        
+        const newWords = sortedWords.map((w, i) => {
+            let newStart = w.start || 0;
+            // Align start of first word to cue start if gap exists
+            if (i === 0 && newStart > cue.start) {
+                newStart = cue.start;
+            }
+
+            const nextWord = sortedWords[i + 1];
+            let newEnd = w.end || 0;
+
+            // Extend end to next word start, or cue end if it is the last word
+            if (nextWord) {
+                newEnd = nextWord.start || newEnd;
+            } else {
+                // For the last word, extend to the end of the line
+                newEnd = Math.max(newEnd, cue.end);
+            }
+
+            return {
+                ...w,
+                start: newStart,
+                end: newEnd
+            };
+        });
+        
+        return { ...cue, words: newWords };
+    });
+
+    updateCues(updated);
+  };
+
   const handleReplaceAll = () => {
     if (!findText) return;
     let count = 0;
@@ -990,23 +1051,23 @@ export function App() {
               {isToolsMenuOpen && (
                  <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-neutral-900 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
                     <div className="p-1">
+                       <button onClick={sortCuesByTime} className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm transition flex items-center gap-2">
+                          <List size={14} className="text-blue-500" /> Sort Rows by Time
+                       </button>
                        <button onClick={compactWhitespace} className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm transition flex items-center gap-2">
                           <WrapText size={14} className="text-indigo-500" /> Compact Whitespace
-                       </button>
-                       <button onClick={autoGenerateKaraoke} className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm transition flex items-center gap-2">
-                          <Wand2 size={14} className="text-purple-500" /> Auto-Word Timing
-                       </button>
-                       <button onClick={fillWordGaps} className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm transition flex items-center gap-2">
-                          <Link size={14} className="text-orange-500" /> Fill Word Gaps
                        </button>
                        <button onClick={removeEmptyWords} className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm transition flex items-center gap-2">
                           <Scissors size={14} className="text-pink-500" /> Remove Empty Words
                        </button>
+                       <button onClick={fillWordGaps} className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm transition flex items-center gap-2">
+                          <Link size={14} className="text-orange-500" /> Fill Word Gaps
+                       </button>
+                       <button onClick={autoGenerateKaraoke} className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm transition flex items-center gap-2">
+                          <Wand2 size={14} className="text-purple-500" /> Auto-Word Timing
+                       </button>
                        <button onClick={clearKaraokeData} className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm transition flex items-center gap-2">
                           <Eraser size={14} className="text-red-500" /> Clear Word Data
-                       </button>
-                       <button onClick={sortCuesByTime} className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm transition flex items-center gap-2">
-                          <List size={14} className="text-blue-500" /> Sort Rows by Time
                        </button>
                     </div>
                  </div>
@@ -1309,9 +1370,26 @@ export function App() {
                         <button onClick={() => setIsFindReplaceOpen(!isFindReplaceOpen)} className={`p-2 rounded-lg transition shrink-0 ${isFindReplaceOpen ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100'}`} title="Find & Replace">
                            <Replace size={18} />
                         </button>
+                        <button onClick={handleHotFix} className="p-2 text-amber-500 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300 transition shrink-0 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg" title="Hot Fix: Cleanup & Sync Words">
+                           <Zap size={18} />
+                        </button>
                         <button onClick={() => setIsShiftModalOpen(true)} className="p-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition shrink-0 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg" title="Shift Times">
                            <Clock size={18} />
                         </button>
+
+                        {selectedCueIds.size > 0 && (
+                            <>
+                                <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800 mx-1 shrink-0 animate-in fade-in zoom-in"></div>
+                                <button 
+                                    onClick={clearSelection} 
+                                    className="p-2 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition shrink-0 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-1 animate-in fade-in zoom-in" 
+                                    title="Uncheck All Rows"
+                                >
+                                    <X size={18} />
+                                    <span className="text-xs font-bold">{selectedCueIds.size}</span>
+                                </button>
+                            </>
+                        )}
                      </div>
 
                       {/* 2. View/AI Controls */}
@@ -1368,8 +1446,8 @@ export function App() {
                 </div>
              )}
 
-             <div className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth pb-32" id="cue-container">
-                <div className="max-w-6xl mx-auto">
+             <div className={`flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth ${mediaUrl ? 'pb-64' : 'pb-32'}`} id="cue-container">
+                <div className="max-w-[95%] 2xl:max-w-[1800px] mx-auto">
                    <CueList 
                         cues={filteredCues} 
                         onChange={handleCueChange} 
@@ -1380,7 +1458,7 @@ export function App() {
                         selectedCueIds={selectedCueIds}
                         onToggleSelection={handleToggleSelection}
                    />
-                   <button onClick={addNewCue} className="w-full py-4 mt-6 border-2 border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl text-neutral-400 hover:text-primary-500 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition flex items-center justify-center gap-2 font-medium">
+                   <button onClick={addNewCue} className="w-full py-4 mt-6 mb-12 border-2 border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl text-neutral-400 hover:text-primary-500 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition flex items-center justify-center gap-2 font-medium">
                       <Plus size={20} /> Add New Line
                    </button>
                 </div>

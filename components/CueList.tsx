@@ -450,7 +450,7 @@ const CueList: React.FC<CueListProps> = ({ cues, onChange, onEditWords, currentM
 
             {/* Timing Controls */}
             {/* Added extra margin to prevent overlap with index/grip on desktop */}
-            <div className="flex flex-col gap-3 w-full md:w-64 mt-8 md:mt-0 md:ml-28 shrink-0">
+            <div className="flex flex-col gap-3 w-full md:w-64 mt-8 md:mt-0 md:ml-20 shrink-0">
                <div className="flex flex-row md:flex-col gap-3">
                   <TimeInput 
                     ms={cue.start} 
