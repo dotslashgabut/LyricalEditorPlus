@@ -67,7 +67,8 @@ import {
   Zap,
   History,
   Repeat,
-  Settings
+  Settings,
+  Github
 } from 'lucide-react';
 
 export function App() {
@@ -909,6 +910,9 @@ export function App() {
       >
         {/* Absolute Buttons Top Right */}
         <div className="absolute top-6 right-6 flex items-center gap-2">
+          <a href="https://github.com/dotslashgabut/lyricaleditorplus" target="_blank" rel="noopener noreferrer" className="p-3 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition">
+            <Github size={20} />
+          </a>
           <button onClick={() => setIsSettingsOpen(true)} className="p-3 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition">
             <Settings size={20} />
           </button>
