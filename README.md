@@ -20,6 +20,7 @@ A sleek, modern, and mobile-friendly web application for creating, editing, and 
 *   **Modern UI:** Fully responsive design with Dark/Light mode support.
 
 ![Editor Interface](screenshot-editor.jpg)
+![Editor Interface](screenshot-export.jpg)
 
 ## Tools & Functionality
 
