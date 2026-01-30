@@ -12,6 +12,7 @@ interface CueListProps {
   viewMode: 'line' | 'word';
   selectedCueIds: Set<string>;
   onToggleSelection: (id: string, shiftKey: boolean) => void;
+  onInsert: (index: number) => void;
 }
 
 // Helper for UI input to handle local state and prevent cursor jumping
@@ -247,7 +248,18 @@ const LocalInput = ({ value, onChange, className, placeholder }: { value: string
     );
 };
 
-const CueList: React.FC<CueListProps> = ({ cues, onChange, onEditWords, currentMillis, onSeek, viewMode, selectedCueIds, onToggleSelection }) => {
+// New Component: Insert Separator
+const InsertSeparator = ({ onClick }: { onClick: () => void }) => (
+  <div className="h-5 flex items-center justify-center group cursor-pointer relative z-10" onClick={onClick} title="Insert new line here">
+     <div className="w-full h-px bg-transparent group-hover:bg-primary-200 dark:group-hover:bg-primary-900/50 transition-colors relative flex items-center justify-center">
+        <button className="absolute w-6 h-6 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400 group-hover:text-primary-500 group-hover:border-primary-300 dark:group-hover:border-primary-700 shadow-sm flex items-center justify-center transition-all transform scale-90 group-hover:scale-100 opacity-0 group-hover:opacity-100">
+           <Plus size={14} />
+        </button>
+     </div>
+  </div>
+);
+
+const CueList: React.FC<CueListProps> = ({ cues, onChange, onEditWords, currentMillis, onSeek, viewMode, selectedCueIds, onToggleSelection, onInsert }) => {
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -280,6 +292,18 @@ const CueList: React.FC<CueListProps> = ({ cues, onChange, onEditWords, currentM
               const updatedWords = [...cue.words];
               // Update first word start to match line start
               updatedWords[0] = { ...updatedWords[0], start: msValue };
+              newCues[index].words = updatedWords;
+          }
+      }
+
+      // SYNC: If End time changed, sync Last Word End if it exists
+      if (field === 'end') {
+          const cue = newCues[index];
+          if (cue.words && cue.words.length > 0) {
+              const updatedWords = [...cue.words];
+              const lastIdx = updatedWords.length - 1;
+              // Sync the end time of the last word to the new line end time
+              updatedWords[lastIdx] = { ...updatedWords[lastIdx], end: msValue as number };
               newCues[index].words = updatedWords;
           }
       }
@@ -367,7 +391,7 @@ const CueList: React.FC<CueListProps> = ({ cues, onChange, onEditWords, currentM
   };
 
   return (
-    <div className="w-full space-y-4 md:space-y-6">
+    <div className="w-full flex flex-col">
       {cues.map((cue, index) => {
         const isActive = activeIndex === index;
         const isDragging = draggedIndex === index;
@@ -379,246 +403,250 @@ const CueList: React.FC<CueListProps> = ({ cues, onChange, onEditWords, currentM
         const isLineOverlap = prevCue && (cue.start < prevCue.end - 1); // 1ms tolerance
         
         return (
-          <div 
-            key={cue.id} 
-            ref={el => { itemRefs.current[index] = el; }}
-            onDragOver={(e) => handleDragOver(e, index)}
-            onDrop={(e) => handleDrop(e, index)}
-            className={`
-              group relative rounded-2xl p-5 md:p-6 transition-all duration-300 flex flex-col md:flex-row gap-6 md:gap-10 items-start border
-              ${isActive 
-                ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-400 dark:border-primary-600 shadow-xl shadow-primary-500/10 scale-[1.01] z-10' 
-                : isSelected
-                    ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-300 dark:border-blue-700'
-                    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 shadow-sm hover:shadow-md'
-              }
-              ${isDragging ? 'opacity-40 border-dashed border-primary-500' : ''}
-              cursor-default
-            `}
-          >
-            {/* Drag Insertion Indicator */}
-            {draggedIndex !== null && overIndex === index && draggedIndex !== index && (
-              <div 
-                className={`absolute left-0 right-0 h-1 bg-primary-500 rounded-full shadow-sm shadow-primary-500/50 z-20 pointer-events-none transition-all duration-200
-                  ${draggedIndex < index ? '-bottom-2 md:-bottom-3' : '-top-2 md:-top-3'}
+          <React.Fragment key={cue.id}>
+             <InsertSeparator onClick={() => onInsert(index)} />
+             <div 
+                ref={el => { itemRefs.current[index] = el; }}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                className={`
+                  group relative rounded-2xl p-5 md:p-6 transition-all duration-300 flex flex-col md:flex-row gap-6 md:gap-10 items-start border
+                  ${isActive 
+                    ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-400 dark:border-primary-600 shadow-xl shadow-primary-500/10 scale-[1.01] z-10' 
+                    : isSelected
+                        ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-300 dark:border-blue-700'
+                        : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 shadow-sm hover:shadow-md'
+                  }
+                  ${isDragging ? 'opacity-40 border-dashed border-primary-500' : ''}
+                  cursor-default
                 `}
               >
-                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-full"></div>
-                 <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-full"></div>
-              </div>
-            )}
-            
-            {/* Selection Checkbox */}
-             <div className="absolute -left-3 md:-left-4 top-1/2 -translate-y-1/2 z-20">
-                <button
-                    onClick={(e) => { e.stopPropagation(); onToggleSelection(cue.id, e.shiftKey); }}
-                    className={`p-1.5 rounded-lg transition-all ${isSelected ? 'text-blue-600 bg-white shadow-sm dark:bg-neutral-800 dark:text-blue-400' : 'text-neutral-300 hover:text-neutral-500 dark:text-neutral-700 dark:hover:text-neutral-500'}`}
-                >
-                    {isSelected ? <CheckSquare size={20} fill="currentColor" className="text-blue-100 dark:text-blue-900" /> : <Square size={20} />}
-                </button>
-             </div>
-
-            {/* Desktop Index & Grip */}
-            <div 
-              draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnd={handleDragEnd}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300 dark:text-neutral-700 hidden md:flex items-center gap-2 cursor-grab active:cursor-grabbing hover:text-primary-500 transition-colors p-2 -ml-2 select-none"
-            >
-                <GripVertical size={20} />
-                <span className={`text-sm font-mono font-medium min-w-[1.5rem] flex items-center gap-1 ${isActive ? 'text-primary-600' : ''}`}>
-                    {index + 1}
-                    {isLineOverlap && (
-                        <div className="text-red-500 animate-pulse" title={`Overlap warning: Starts before Line ${index} ends`}>
-                            <AlertCircle size={14} />
-                        </div>
-                    )}
-                </span>
-            </div>
-
-            {/* Mobile Index / Handle */}
-            <div 
-              draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnd={handleDragEnd}
-              className="md:hidden absolute top-3 left-4 text-xs font-mono font-bold text-neutral-400 flex items-center gap-1 cursor-grab active:cursor-grabbing p-2 -m-2 select-none touch-none"
-            >
-              <GripVertical size={16} />
-              #{index + 1}
-              {isLineOverlap && <AlertCircle size={14} className="text-red-500" />}
-            </div>
-
-            {/* Timing Controls */}
-            {/* Added extra margin to prevent overlap with index/grip on desktop */}
-            <div className="flex flex-col gap-3 w-full md:w-64 mt-8 md:mt-0 md:ml-20 shrink-0">
-               <div className="flex flex-row md:flex-col gap-3">
-                  <TimeInput 
-                    ms={cue.start} 
-                    onChange={(val) => updateCue(index, 'start', val)}
-                    label="Start"
-                    className={`flex-1 ${isLineOverlap ? 'ring-1 ring-red-500 rounded-lg' : ''}`}
-                  />
-                  <TimeInput 
-                    ms={cue.end} 
-                    onChange={(val) => updateCue(index, 'end', val)}
-                    label="End"
-                    className="flex-1"
-                  />
-               </div>
-                
-                {onSeek && (
-                   <button 
-                     onClick={() => onSeek(cue.start, true)} 
-                     className="mt-1 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-100 dark:hover:bg-primary-900/40 text-neutral-600 dark:text-neutral-400 hover:text-primary-600 transition text-sm font-medium"
-                     title="Play from this line"
-                   >
-                     <PlayCircle size={18} /> Play Line
-                   </button>
-                )}
-            </div>
-
-            {/* Text Content */}
-            <div className="flex-1 w-full relative">
-              <div className="absolute left-4 top-4 text-neutral-400 pointer-events-none">
-                <AlignLeft size={20} />
-              </div>
-
-              {viewMode === 'word' ? (
-                 <div className="pl-12 w-full">
-                    <div className="flex flex-wrap gap-2">
-                      {getDisplayWords(cue, index).map((word, wIdx, allWords) => {
-                        const wordStart = word.start || 0;
-                        const wordEnd = word.end || (wordStart + 300);
-                        const isWordActive = currentMillis >= wordStart && currentMillis < wordEnd;
-                        
-                        // --- Overlap Detection (Words) ---
-                        // 1. Previous word end > Current word start (Overlap)
-                        // 2. Previous word start > Current word start (Out of order)
-                        const prevWord = wIdx > 0 ? allWords[wIdx - 1] : null;
-                        const isOverlap = prevWord && (wordStart < (prevWord.end || 0) - 1);
-                        const isOutOfOrder = prevWord && (wordStart < (prevWord.start || 0));
-                        const isInvalidDuration = wordStart > wordEnd;
-                        
-                        // New Check: Last word ends after line ends
-                        const isLineEndIssue = (wIdx === allWords.length - 1) && (wordEnd > cue.end);
-
-                        const hasIssue = isOverlap || isOutOfOrder || isInvalidDuration || isLineEndIssue;
-                        let issueTitle = "Click to play";
-                        if (isOverlap) issueTitle = "Overlap: Starts before previous word ends";
-                        if (isOutOfOrder) issueTitle = "Out of Order: Starts before previous word starts";
-                        if (isInvalidDuration) issueTitle = "Invalid: End time is before start time";
-                        if (isLineEndIssue) issueTitle = "Overflow: Word ends after line ends";
-
-                        return (
-                          <div 
-                            key={word.id || wIdx} 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onSeek && onSeek(wordStart, true);
-                            }}
-                            title={issueTitle}
-                            className={`flex flex-col items-center p-2 rounded-lg border transition-all duration-200 cursor-pointer select-none relative
-                                ${isWordActive 
-                                    ? 'bg-primary-100 dark:bg-primary-900/40 border-primary-500 scale-105 shadow-md z-10' 
-                                    : hasIssue 
-                                        ? 'bg-red-50 dark:bg-red-900/20 border-red-400 dark:border-red-600'
-                                        : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:border-primary-300 dark:hover:border-primary-700'
-                                }
-                            `}
-                          >
-                             {/* Word Overlap Indicator */}
-                             {hasIssue && (
-                                 <div className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 z-20 shadow-sm">
-                                    <AlertCircle size={10} />
-                                 </div>
-                             )}
-
-                             <div className="flex items-center gap-1 mb-1 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-700 p-0.5" onClick={(e) => e.stopPropagation()}>
-                               <button 
-                                 onClick={(e) => { e.stopPropagation(); updateWordInCue(index, wIdx, 'start', wordStart - 100); }}
-                                 className="p-1 text-neutral-400 hover:text-primary-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded transition"
-                                 title="-0.1s"
-                               >
-                                 <Minus size={10} />
-                               </button>
-                               <WordTimeInput 
-                                  ms={wordStart}
-                                  onChange={(val) => updateWordInCue(index, wIdx, 'start', val)}
-                               />
-                               <button 
-                                 onClick={(e) => { e.stopPropagation(); updateWordInCue(index, wIdx, 'start', wordStart + 100); }}
-                                 className="p-1 text-neutral-400 hover:text-primary-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded transition"
-                                 title="+0.1s"
-                               >
-                                 <Plus size={10} />
-                               </button>
-                             </div>
-                             <LocalInput 
-                                value={word.text}
-                                onChange={(val) => updateWordInCue(index, wIdx, 'text', val)}
-                                className={`w-24 text-sm font-medium text-center bg-transparent border-b border-transparent outline-none transition
-                                    ${isWordActive ? 'text-primary-700 dark:text-primary-300 font-bold' : 'text-neutral-900 dark:text-neutral-100 focus:text-primary-600 focus:border-primary-500'}
-                                `}
-                                placeholder="word"
-                             />
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <p className="mt-2 text-xs text-neutral-400">
-                      Click words to play. Edit timings above. First word syncs with line start.
-                    </p>
-                    <div className="flex items-center gap-3 mt-4">
-                       <button 
-                         onClick={() => removeCue(index)}
-                         className="ml-auto text-sm text-red-500 hover:text-red-600 px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition font-medium flex items-center gap-1"
-                       >
-                         <Trash2 size={16} /> Delete
-                       </button>
-                    </div>
-                 </div>
-              ) : (
-                 <>
-                   <LocalTextarea
-                    rows={2}
-                    value={cue.text}
-                    onChange={(val) => updateCue(index, 'text', val)}
-                    className={`
-                      w-full pl-12 pr-4 py-4 rounded-xl border outline-none resize-none transition leading-relaxed
-                      ${isActive 
-                          ? 'bg-white dark:bg-neutral-950 border-primary-200 dark:border-primary-800 text-primary-900 dark:text-white font-medium ring-2 ring-primary-100 dark:ring-primary-900/20' 
-                          : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent'
-                      }
-                      text-lg md:text-xl
+                {/* Drag Insertion Indicator */}
+                {draggedIndex !== null && overIndex === index && draggedIndex !== index && (
+                  <div 
+                    className={`absolute left-0 right-0 h-1 bg-primary-500 rounded-full shadow-sm shadow-primary-500/50 z-20 pointer-events-none transition-all duration-200
+                      ${draggedIndex < index ? '-bottom-2 md:-bottom-3' : '-top-2 md:-top-3'}
                     `}
-                    placeholder="Subtitle text..."
-                  />
-                  <div className="flex items-center gap-3 mt-3">
-                      <button 
-                        onClick={() => onEditWords(index)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 transition text-sm font-medium"
-                        title="Edit Word Timestamps (Karaoke)"
-                      >
-                        <Mic size={16} />
-                        <span>Word Timing</span>
-                        {/* Fix: Strictly check if words array exists and has items */}
-                        {cue.words && Array.isArray(cue.words) && cue.words.length > 0 ? <span className="w-2 h-2 rounded-full bg-green-500 ml-1"></span> : null}
-                      </button>
-
-                      <button 
-                        onClick={() => removeCue(index)}
-                        className="ml-auto text-sm text-red-500 hover:text-red-600 px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition font-medium flex items-center gap-1"
-                      >
-                        <span className="hidden sm:inline">Delete</span>
-                        <span className="sm:hidden">Del</span>
-                      </button>
+                  >
+                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-full"></div>
+                     <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-full"></div>
                   </div>
-                 </>
-              )}
-            </div>
-          </div>
+                )}
+                
+                {/* Selection Checkbox */}
+                 <div className="absolute -left-3 md:-left-4 top-1/2 -translate-y-1/2 z-20">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onToggleSelection(cue.id, e.shiftKey); }}
+                        className={`p-1.5 rounded-lg transition-all ${isSelected ? 'text-blue-600 bg-white shadow-sm dark:bg-neutral-800 dark:text-blue-400' : 'text-neutral-300 hover:text-neutral-500 dark:text-neutral-700 dark:hover:text-neutral-500'}`}
+                    >
+                        {isSelected ? <CheckSquare size={20} fill="currentColor" className="text-blue-100 dark:text-blue-900" /> : <Square size={20} />}
+                    </button>
+                 </div>
+
+                {/* Desktop Index & Grip */}
+                <div 
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300 dark:text-neutral-700 hidden md:flex items-center gap-2 cursor-grab active:cursor-grabbing hover:text-primary-500 transition-colors p-2 -ml-2 select-none"
+                >
+                    <GripVertical size={20} />
+                    <span className={`text-sm font-mono font-medium min-w-[1.5rem] flex items-center gap-1 ${isActive ? 'text-primary-600' : ''}`}>
+                        {index + 1}
+                        {isLineOverlap && (
+                            <div className="text-red-500 animate-pulse" title={`Overlap warning: Starts before Line ${index} ends`}>
+                                <AlertCircle size={14} />
+                            </div>
+                        )}
+                    </span>
+                </div>
+
+                {/* Mobile Index / Handle */}
+                <div 
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className="md:hidden absolute top-3 left-4 text-xs font-mono font-bold text-neutral-400 flex items-center gap-1 cursor-grab active:cursor-grabbing p-2 -m-2 select-none touch-none"
+                >
+                  <GripVertical size={16} />
+                  #{index + 1}
+                  {isLineOverlap && <AlertCircle size={14} className="text-red-500" />}
+                </div>
+
+                {/* Timing Controls */}
+                {/* Added extra margin to prevent overlap with index/grip on desktop */}
+                <div className="flex flex-col gap-3 w-full md:w-64 mt-8 md:mt-0 md:ml-20 shrink-0">
+                   <div className="flex flex-row md:flex-col gap-3">
+                      <TimeInput 
+                        ms={cue.start} 
+                        onChange={(val) => updateCue(index, 'start', val)}
+                        label="Start"
+                        className={`flex-1 ${isLineOverlap ? 'ring-1 ring-red-500 rounded-lg' : ''}`}
+                      />
+                      <TimeInput 
+                        ms={cue.end} 
+                        onChange={(val) => updateCue(index, 'end', val)}
+                        label="End"
+                        className="flex-1"
+                      />
+                   </div>
+                    
+                    {onSeek && (
+                       <button 
+                         onClick={() => onSeek(cue.start, true)} 
+                         className="mt-1 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-100 dark:hover:bg-primary-900/40 text-neutral-600 dark:text-neutral-400 hover:text-primary-600 transition text-sm font-medium"
+                         title="Play from this line"
+                       >
+                         <PlayCircle size={18} /> Play Line
+                       </button>
+                    )}
+                </div>
+
+                {/* Text Content */}
+                <div className="flex-1 w-full relative">
+                  <div className="absolute left-4 top-4 text-neutral-400 pointer-events-none">
+                    <AlignLeft size={20} />
+                  </div>
+
+                  {viewMode === 'word' ? (
+                     <div className="pl-12 w-full">
+                        <div className="flex flex-wrap gap-2">
+                          {getDisplayWords(cue, index).map((word, wIdx, allWords) => {
+                            const wordStart = word.start || 0;
+                            const wordEnd = word.end || (wordStart + 300);
+                            const isWordActive = currentMillis >= wordStart && currentMillis < wordEnd;
+                            
+                            // --- Overlap Detection (Words) ---
+                            // 1. Previous word end > Current word start (Overlap)
+                            // 2. Previous word start > Current word start (Out of order)
+                            const prevWord = wIdx > 0 ? allWords[wIdx - 1] : null;
+                            const isOverlap = prevWord && (wordStart < (prevWord.end || 0) - 1);
+                            const isOutOfOrder = prevWord && (wordStart < (prevWord.start || 0));
+                            const isInvalidDuration = wordStart > wordEnd;
+                            
+                            // New Check: Last word ends after line ends
+                            const isLineEndIssue = (wIdx === allWords.length - 1) && (wordEnd > cue.end);
+
+                            const hasIssue = isOverlap || isOutOfOrder || isInvalidDuration || isLineEndIssue;
+                            let issueTitle = "Click to play";
+                            if (isOverlap) issueTitle = "Overlap: Starts before previous word ends";
+                            if (isOutOfOrder) issueTitle = "Out of Order: Starts before previous word starts";
+                            if (isInvalidDuration) issueTitle = "Invalid: End time is before start time";
+                            if (isLineEndIssue) issueTitle = "Overflow: Word ends after line ends";
+
+                            return (
+                              <div 
+                                key={word.id || wIdx} 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSeek && onSeek(wordStart, true);
+                                }}
+                                title={issueTitle}
+                                className={`flex flex-col items-center p-2 rounded-lg border transition-all duration-200 cursor-pointer select-none relative
+                                    ${isWordActive 
+                                        ? 'bg-primary-100 dark:bg-primary-900/40 border-primary-500 scale-105 shadow-md z-10' 
+                                        : hasIssue 
+                                            ? 'bg-red-50 dark:bg-red-900/20 border-red-400 dark:border-red-600'
+                                            : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:border-primary-300 dark:hover:border-primary-700'
+                                    }
+                                `}
+                              >
+                                 {/* Word Overlap Indicator */}
+                                 {hasIssue && (
+                                     <div className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 z-20 shadow-sm">
+                                        <AlertCircle size={10} />
+                                     </div>
+                                 )}
+
+                                 <div className="flex items-center gap-1 mb-1 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-700 p-0.5" onClick={(e) => e.stopPropagation()}>
+                                   <button 
+                                     onClick={(e) => { e.stopPropagation(); updateWordInCue(index, wIdx, 'start', wordStart - 100); }}
+                                     className="p-1 text-neutral-400 hover:text-primary-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded transition"
+                                     title="-0.1s"
+                                   >
+                                     <Minus size={10} />
+                                   </button>
+                                   <WordTimeInput 
+                                      ms={wordStart}
+                                      onChange={(val) => updateWordInCue(index, wIdx, 'start', val)}
+                                   />
+                                   <button 
+                                     onClick={(e) => { e.stopPropagation(); updateWordInCue(index, wIdx, 'start', wordStart + 100); }}
+                                     className="p-1 text-neutral-400 hover:text-primary-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded transition"
+                                     title="+0.1s"
+                                   >
+                                     <Plus size={10} />
+                                   </button>
+                                 </div>
+                                 <LocalInput 
+                                    value={word.text}
+                                    onChange={(val) => updateWordInCue(index, wIdx, 'text', val)}
+                                    className={`w-24 text-sm font-medium text-center bg-transparent border-b border-transparent outline-none transition
+                                        ${isWordActive ? 'text-primary-700 dark:text-primary-300 font-bold' : 'text-neutral-900 dark:text-neutral-100 focus:text-primary-600 focus:border-primary-500'}
+                                    `}
+                                    placeholder="word"
+                                 />
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="mt-2 text-xs text-neutral-400">
+                          Click words to play. Edit timings above. First word syncs with line start.
+                        </p>
+                        <div className="flex items-center gap-3 mt-4">
+                           <button 
+                             onClick={() => removeCue(index)}
+                             className="ml-auto text-sm text-red-500 hover:text-red-600 px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition font-medium flex items-center gap-1"
+                           >
+                             <Trash2 size={16} /> Delete
+                           </button>
+                        </div>
+                     </div>
+                  ) : (
+                     <>
+                       <LocalTextarea
+                        rows={2}
+                        value={cue.text}
+                        onChange={(val) => updateCue(index, 'text', val)}
+                        className={`
+                          w-full pl-12 pr-4 py-4 rounded-xl border outline-none resize-none transition leading-relaxed
+                          ${isActive 
+                              ? 'bg-white dark:bg-neutral-950 border-primary-200 dark:border-primary-800 text-primary-900 dark:text-white font-medium ring-2 ring-primary-100 dark:ring-primary-900/20' 
+                              : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent'
+                          }
+                          text-lg md:text-xl
+                        `}
+                        placeholder="Subtitle text..."
+                      />
+                      <div className="flex items-center gap-3 mt-3">
+                          <button 
+                            onClick={() => onEditWords(index)}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 transition text-sm font-medium"
+                            title="Edit Word Timestamps (Karaoke)"
+                          >
+                            <Mic size={16} />
+                            <span>Word Timing</span>
+                            {/* Fix: Strictly check if words array exists and has items */}
+                            {cue.words && Array.isArray(cue.words) && cue.words.length > 0 ? <span className="w-2 h-2 rounded-full bg-green-500 ml-1"></span> : null}
+                          </button>
+
+                          <button 
+                            onClick={() => removeCue(index)}
+                            className="ml-auto text-sm text-red-500 hover:text-red-600 px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition font-medium flex items-center gap-1"
+                          >
+                            <span className="hidden sm:inline">Delete</span>
+                            <span className="sm:hidden">Del</span>
+                          </button>
+                      </div>
+                     </>
+                  )}
+                </div>
+              </div>
+          </React.Fragment>
         );
       })}
+      {/* Final separator at the bottom */}
+      <InsertSeparator onClick={() => onInsert(cues.length)} />
     </div>
   );
 };

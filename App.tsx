@@ -556,15 +556,25 @@ export function App() {
   };
 
   const addNewCue = () => {
-    const lastCue = cues[cues.length - 1];
-    const newStart = lastCue ? lastCue.end : 0;
+    insertCue(cues.length);
+  };
+
+  const insertCue = (index: number) => {
+    const prevCue = index > 0 ? cues[index - 1] : null;
+    
+    const newStart = prevCue ? prevCue.end : 0;
+    const newEnd = newStart + 2000;
+    
     const newCue: Cue = {
       id: `new-${Date.now()}`,
       start: newStart,
-      end: newStart + 2000,
+      end: newEnd,
       text: ''
     };
-    updateCues([...cues, newCue]);
+    
+    const newCues = [...cues];
+    newCues.splice(index, 0, newCue);
+    updateCues(newCues);
   };
 
   const shiftAllTimes = (ms: number) => {
@@ -674,8 +684,8 @@ export function App() {
               if (nextWord) {
                   newEnd = nextWord.start || newEnd;
               } else {
-                  // For the last word, extend to the end of the line
-                  newEnd = Math.max(newEnd, cue.end);
+                  // For the last word, sync to the end of the line
+                  newEnd = cue.end;
               }
 
               return {
@@ -728,7 +738,7 @@ export function App() {
         return { ...cue, words: newWords };
     });
 
-    // 3. Fill Word Gaps
+    // 3. Fill Word Gaps & Sync End
     updated = updated.map(cue => {
         if (!cue.words || cue.words.length === 0) return cue;
         
@@ -749,8 +759,8 @@ export function App() {
             if (nextWord) {
                 newEnd = nextWord.start || newEnd;
             } else {
-                // For the last word, extend to the end of the line
-                newEnd = Math.max(newEnd, cue.end);
+                // For the last word, strictly sync to the end of the line
+                newEnd = cue.end;
             }
 
             return {
@@ -819,22 +829,22 @@ export function App() {
 
         {/* Main Card */}
         <div className={`
-          max-w-2xl lg:max-w-2xl w-full rounded-3xl p-8 md:p-12 transition-all duration-300 relative
+          max-w-2xl lg:max-w-2xl w-full rounded-3xl p-6 md:p-8 transition-all duration-300 relative
           ${dragging ? 'bg-primary-50 dark:bg-primary-900/20 scale-105 shadow-2xl border-2 border-dashed border-primary-500' : 'bg-white dark:bg-neutral-900 shadow-xl border border-neutral-200 dark:border-neutral-800'}
         `}>
-          <div className="flex flex-col items-center text-center mb-10">
-              <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-orange-600 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-primary-500/20">
-                <Music size={40} />
+          <div className="flex flex-col items-center text-center mb-6">
+              <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-orange-600 rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg shadow-primary-500/20">
+                <Music size={32} />
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-500 mb-4 py-2">
+              <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-500 mb-2 py-1">
                 Lyrical Editor Plus
               </h1>
-              <p className="text-neutral-500 dark:text-neutral-400 text-lg max-w-lg">
+              <p className="text-neutral-500 dark:text-neutral-400 text-base max-w-lg">
                 The modern way to create, edit, and sync lyrics. <br/> AI-powered transcription & generation.
               </p>
           </div>
 
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-6">
               <div className="bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl flex gap-1">
                   <button 
                     onClick={() => setHomeTab('upload')} 
@@ -1457,10 +1467,8 @@ export function App() {
                         viewMode={viewMode}
                         selectedCueIds={selectedCueIds}
                         onToggleSelection={handleToggleSelection}
+                        onInsert={insertCue}
                    />
-                   <button onClick={addNewCue} className="w-full py-4 mt-6 mb-12 border-2 border-dashed border-neutral-300 dark:border-neutral-800 rounded-2xl text-neutral-400 hover:text-primary-500 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition flex items-center justify-center gap-2 font-medium">
-                      <Plus size={20} /> Add New Line
-                   </button>
                 </div>
              </div>
 
