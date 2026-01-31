@@ -4,8 +4,17 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Cue, Word } from '../types';
 
 // Initialize Gemini API
-// Using process.env.API_KEY as per instructions
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to get fresh client with current key
+export const getGenAIClient = () => {
+  const storedKey = localStorage.getItem('gemini_api_key');
+  const apiKey = storedKey || process.env.API_KEY;
+
+  if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
+    throw new Error("Gemini API Key is missing. Please add it in Settings.");
+  }
+
+  return new GoogleGenAI({ apiKey });
+};
 
 /**
  * Helper to convert file to base64 for Gemini
@@ -34,7 +43,7 @@ export interface TranscriptionOptions {
 }
 
 export const transcribeAudio = async (
-  file: File, 
+  file: File,
   options: TranscriptionOptions,
   signal?: AbortSignal
 ): Promise<Cue[]> => {
@@ -44,11 +53,11 @@ export const transcribeAudio = async (
   }
 
   const modelName = options.model || 'gemini-2.5-flash';
-  
+
   const audioPart = await fileToPart(file);
 
   const isWordsMode = options.mode === 'words';
-  
+
   const timingInstructions = `
     IMPORTANT TIMING RULES:
     1. Timestamps must be ABSOLUTE integers in MILLISECONDS from the very start of the file.
@@ -59,7 +68,7 @@ export const transcribeAudio = async (
        - 2 minutes = 120000 ms
   `;
 
-  const prompt = isWordsMode 
+  const prompt = isWordsMode
     ? `Transcribe the audio accurately into lyrics/subtitles. 
        Return a JSON array of cues. 
        Each cue represents a LINE of lyrics/speech.
@@ -111,7 +120,7 @@ export const transcribeAudio = async (
   };
 
   try {
-    const generateReq = ai.models.generateContent({
+    const generateReq = getGenAIClient().models.generateContent({
       model: modelName,
       contents: {
         parts: [
@@ -129,14 +138,14 @@ export const transcribeAudio = async (
     let response;
 
     if (signal) {
-        const abortPromise = new Promise<never>((_, reject) => {
-            const handleAbort = () => reject(new DOMException('Aborted', 'AbortError'));
-            if (signal.aborted) handleAbort();
-            else signal.addEventListener('abort', handleAbort);
-        });
-        response = await Promise.race([generateReq, abortPromise]);
+      const abortPromise = new Promise<never>((_, reject) => {
+        const handleAbort = () => reject(new DOMException('Aborted', 'AbortError'));
+        if (signal.aborted) handleAbort();
+        else signal.addEventListener('abort', handleAbort);
+      });
+      response = await Promise.race([generateReq, abortPromise]);
     } else {
-        response = await generateReq;
+      response = await generateReq;
     }
 
     if (response.text) {
@@ -158,7 +167,7 @@ export const transcribeAudio = async (
     return [];
   } catch (error: any) {
     if (error.name === 'AbortError' || (signal && signal.aborted)) {
-        throw new Error("Transcription cancelled by user.");
+      throw new Error("Transcription cancelled by user.");
     }
     console.error("Transcription failed", error);
     throw error;
@@ -166,7 +175,7 @@ export const transcribeAudio = async (
 };
 
 export const generateLyrics = async (
-  topic: string, 
+  topic: string,
   model: string = 'gemini-2.5-flash'
 ): Promise<Cue[]> => {
   const prompt = `Generate song lyrics about: "${topic}". 
@@ -175,7 +184,7 @@ export const generateLyrics = async (
   Do not include [Verse], [Chorus] tags, just the lyrics lines.`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await getGenAIClient().models.generateContent({
       model: model,
       contents: prompt,
       config: {
@@ -195,25 +204,25 @@ export const generateLyrics = async (
     let cueIndex = 0;
 
     lines.forEach((line) => {
-        const cleanLine = line.trim();
-        
-        if (!cleanLine) {
-            // Found a blank line/stanza break.
-            // Advance time to create a gap, but don't add a cue.
-            currentTime += STANZA_GAP;
-            return;
-        }
+      const cleanLine = line.trim();
 
-        // Add Cue
-        cues.push({
-            id: `gen-${cueIndex++}`,
-            start: currentTime,
-            end: currentTime + LINE_DURATION,
-            text: cleanLine
-        });
+      if (!cleanLine) {
+        // Found a blank line/stanza break.
+        // Advance time to create a gap, but don't add a cue.
+        currentTime += STANZA_GAP;
+        return;
+      }
 
-        // Advance time for next line
-        currentTime += LINE_DURATION;
+      // Add Cue
+      cues.push({
+        id: `gen-${cueIndex++}`,
+        start: currentTime,
+        end: currentTime + LINE_DURATION,
+        text: cleanLine
+      });
+
+      // Advance time for next line
+      currentTime += LINE_DURATION;
     });
 
     return cues;
@@ -224,12 +233,12 @@ export const generateLyrics = async (
 };
 
 export const refineLyrics = async (
-  cues: Cue[], 
-  instruction: string, 
+  cues: Cue[],
+  instruction: string,
   model: string = 'gemini-2.5-flash'
 ): Promise<Cue[]> => {
   const simplifiedCues = cues.map(c => ({ id: c.id, text: c.text }));
-  
+
   const prompt = `Refine the following lyrics based on this instruction: "${instruction}".
   
   Input Lyrics JSON:
@@ -252,7 +261,7 @@ export const refineLyrics = async (
   };
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await getGenAIClient().models.generateContent({
       model: model,
       contents: prompt,
       config: {
@@ -263,7 +272,7 @@ export const refineLyrics = async (
 
     if (response.text) {
       const refinedData = JSON.parse(response.text);
-      
+
       const idMap = new Map(cues.map(c => [c.id, c]));
       const newCues: Cue[] = [];
       let lastEnd = 0;
@@ -274,7 +283,7 @@ export const refineLyrics = async (
           newCues.push({
             ...original,
             text: item.text,
-            words: item.text !== original.text ? undefined : original.words 
+            words: item.text !== original.text ? undefined : original.words
           });
           lastEnd = original.end;
         } else {
@@ -296,54 +305,136 @@ export const refineLyrics = async (
   }
 };
 
-// --- TTS Features (Google Translate Source) ---
+// --- TTS Features ---
 
-let currentAudio: HTMLAudioElement | null = null;
+// Audio Decoding Helpers
+function decode(base64: string) {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function decodeAudioData(
+  data: Uint8Array,
+  ctx: AudioContext,
+  sampleRate: number,
+  numChannels: number,
+): Promise<AudioBuffer> {
+  const dataInt16 = new Int16Array(data.buffer);
+  const frameCount = dataInt16.length / numChannels;
+  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+
+  for (let channel = 0; channel < numChannels; channel++) {
+    const channelData = buffer.getChannelData(channel);
+    for (let i = 0; i < frameCount; i++) {
+      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    }
+  }
+  return buffer;
+}
+
+let ttsAudioContext: AudioContext | null = null;
+let currentSource: AudioBufferSourceNode | null = null;
+let activeRequestId = 0;
 
 export const stopTTS = () => {
-    if (currentAudio) {
-        try {
-            currentAudio.pause();
-            currentAudio.currentTime = 0;
-        } catch (e) {
-            // ignore if already stopped or error
-        }
-        currentAudio = null;
+  activeRequestId++; // Increment to invalidate any pending async operations
+  if (currentSource) {
+    try {
+      currentSource.stop();
+    } catch (e) {
+      // ignore if already stopped
     }
+    currentSource = null;
+  }
 };
 
 export const playTTS = async (text: string) => {
-    stopTTS(); // Stop any existing playback
-    
-    const textToSpeak = text.trim();
-    if (!textToSpeak) return;
+  stopTTS(); // Stop any existing playback/request
 
-    // Use Google Translate's unofficial TTS API
-    // client=tw-ob is key to access it freely
-    // tl=en defaults to English. You could make this dynamic based on detected text language if needed.
-    const encodedText = encodeURIComponent(textToSpeak);
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=en&client=tw-ob`;
+  const requestId = activeRequestId;
 
-    return new Promise<void>((resolve, reject) => {
-        const audio = new Audio(url);
-        currentAudio = audio;
+  let textToSpeak = text.trim();
+  if (!textToSpeak) return;
 
-        audio.onended = () => {
-            if (currentAudio === audio) {
-                currentAudio = null;
-            }
-            resolve();
-        };
+  if (!ttsAudioContext) {
+    ttsAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+  }
 
-        audio.onerror = (e) => {
-            console.error("TTS Playback Error", e);
-            reject(new Error("Failed to play audio from Google Translate."));
-        };
+  // Ensure context is running (needed for some browsers if not initiated by user gesture recently)
+  if (ttsAudioContext.state === 'suspended') {
+    await ttsAudioContext.resume();
+  }
 
-        // Attempt to play
-        audio.play().catch(e => {
-            // User interaction policy might block auto-play if not triggered by click
-            reject(e);
-        });
+  // WORKAROUND: For very short text (likely single words), appending punctuation 
+  // helps the model recognize it as a distinct utterance to pronounce.
+  // Otherwise, it might treat it as a fragment or silence and return no audio.
+  if (textToSpeak.length < 5 && !/[.?!,;:]$/.test(textToSpeak)) {
+    textToSpeak += ".";
+  }
+
+  try {
+    const response = await getGenAIClient().models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text: textToSpeak }] }],
+      config: {
+        // Use string cast for Modality to prevent potential Enum issues at runtime with some bundlers
+        responseModalities: ['AUDIO' as Modality],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
+          },
+        },
+      },
     });
+
+    if (requestId !== activeRequestId) return; // Aborted during API call
+
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+    if (!base64Audio) {
+      // Debugging checks
+      const textResponse = response.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (textResponse) {
+        console.warn("TTS API returned text instead of audio:", textResponse);
+        throw new Error("TTS failed: The model returned text instead of audio. Please try again.");
+      }
+      if (response.candidates?.[0]?.finishReason) {
+        // Check safety ratings or other reasons if available in full log
+        console.warn("TTS Finish Reason:", response.candidates[0].finishReason);
+        throw new Error(`TTS generation stopped. Reason: ${response.candidates[0].finishReason}`);
+      }
+      throw new Error("No audio data returned from TTS. The word might be too short or filtered.");
+    }
+
+    const audioBuffer = await decodeAudioData(
+      decode(base64Audio),
+      ttsAudioContext,
+      24000,
+      1
+    );
+
+    if (requestId !== activeRequestId) return; // Aborted during decoding
+
+    const source = ttsAudioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(ttsAudioContext.destination);
+    currentSource = source;
+    source.start();
+
+    return new Promise<void>((resolve) => {
+      source.onended = () => {
+        if (currentSource === source) currentSource = null;
+        resolve();
+      };
+    });
+
+  } catch (error) {
+    console.error("TTS Error:", error);
+    throw error;
+  }
 };
