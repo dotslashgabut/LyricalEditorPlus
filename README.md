@@ -4,6 +4,8 @@
 
 Lyrical Editor Plus is a professional-grade, web-based tool designed for creators who need precision, speed, and flexibility. Built with a mobile-first approach, it offers a sleek, dark-mode-ready interface for editing **LRC**, **SRT**, **VTT**, and **TTML** files.
 
+For a version with Web Speech API Text-to-Speech, use the `web-speech-api` branch.
+
 Powered by **Google Gemini AI**, it automates tedious tasks like transcription, synchronization, and content generation.
 
 ![Home Screen](screenshot-home.jpg)

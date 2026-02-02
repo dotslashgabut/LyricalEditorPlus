@@ -66,7 +66,8 @@ import {
   Scissors,
   Zap,
   History,
-  Repeat
+  Repeat,
+  Square
 } from 'lucide-react';
 
 export function App() {
@@ -282,6 +283,16 @@ export function App() {
             stopTicker();
         }
     }
+  };
+
+  const handleStop = () => {
+    if (mediaRef.current) {
+        mediaRef.current.pause();
+        mediaRef.current.currentTime = 0;
+    }
+    setIsPlaying(false);
+    setCurrentTime(0);
+    stopTicker();
   };
 
   const toggleMute = () => {
@@ -1596,6 +1607,14 @@ export function App() {
                                 className="w-10 h-10 flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg shadow-primary-500/30 transition-all active:scale-95 shrink-0"
                             >
                                 {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
+                            </button>
+                            {/* STOP BUTTON */}
+                            <button 
+                                onClick={handleStop}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                                title="Stop"
+                            >
+                                <Square size={16} fill="currentColor" />
                             </button>
                             {/* REPEAT BUTTON */}
                             <button 
