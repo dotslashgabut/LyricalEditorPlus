@@ -1,6 +1,6 @@
 
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useId } from 'react';
 import { Cue, Word } from '../types';
 import { msToSrt, msToLrc, msToVtt, msToMmSsMmm, timeToMs } from '../utils/timeUtils';
 import { AlignLeft, GripVertical, Mic, PlayCircle, Plus, Minus, Trash2, Bold, Italic, AlertCircle, CheckSquare, Square, Volume2, Loader2 } from 'lucide-react';
@@ -24,6 +24,7 @@ const TimeInput = ({ ms, onChange, label, className = '' }: { ms: number, onChan
   // Use msToVtt for UI to display dots for milliseconds
   const [localText, setLocalText] = useState(msToVtt(ms));
   const [isFocused, setIsFocused] = useState(false);
+  const inputId = useId();
 
   useEffect(() => {
     if (!isFocused) {
@@ -85,7 +86,9 @@ const TimeInput = ({ ms, onChange, label, className = '' }: { ms: number, onChan
 
         <div className="relative flex-1 min-w-0">
           <input
+            id={inputId}
             type="text"
+            name={`time-input-${label ? label.toLowerCase().replace(/\s+/g, '-') : 'timmp'}`}
             value={localText}
             onChange={(e) => setLocalText(e.target.value)}
             onFocus={() => setIsFocused(true)}
@@ -94,9 +97,9 @@ const TimeInput = ({ ms, onChange, label, className = '' }: { ms: number, onChan
             className="w-full text-center py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm md:text-base font-mono text-neutral-700 dark:text-neutral-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition shadow-sm"
             placeholder={label}
           />
-          <div className="absolute inset-x-0 bottom-full mb-1 text-center text-[10px] text-neutral-400 uppercase tracking-wider font-semibold opacity-0 group-focus-within/time:opacity-100 transition-opacity pointer-events-none">
+          <label htmlFor={inputId} className="absolute inset-x-0 bottom-full mb-1 text-center text-[10px] text-neutral-400 uppercase tracking-wider font-semibold opacity-0 group-focus-within/time:opacity-100 transition-opacity cursor-pointer">
             {label}
-          </div>
+          </label>
         </div>
 
         <button
@@ -152,6 +155,8 @@ const WordTimeInput = ({ ms, onChange }: { ms: number, onChange: (val: number) =
   return (
     <input
       type="text"
+      name="word-timestamp"
+      aria-label="Word timestamp"
       value={localText}
       onChange={(e) => setLocalText(e.target.value)}
       onFocus={() => setIsFocused(true)}
@@ -198,6 +203,8 @@ const LocalTextarea = ({ value, onChange, className, placeholder, rows, onInsert
   return (
     <div className="relative group/textarea">
       <textarea
+        name="subtitle-text"
+        aria-label="Subtitle text"
         ref={textareaRef}
         value={localText}
         onChange={(e) => setLocalText(e.target.value)}
@@ -241,6 +248,8 @@ const LocalInput = ({ value, onChange, className, placeholder }: { value: string
   return (
     <input
       type="text"
+      name="word-text"
+      aria-label="Word text"
       value={localText}
       onChange={(e) => setLocalText(e.target.value)}
       onFocus={() => setIsFocused(true)}

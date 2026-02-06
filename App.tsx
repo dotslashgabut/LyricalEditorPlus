@@ -1039,6 +1039,7 @@ export function App() {
                     className="hidden"
                     multiple
                     accept=".lrc,.srt,.vtt,.xml,.ttml,.txt,.json,audio/*,video/*,.mp3,.wav,.ogg,.m4a,.mp4,.webm,.ogv,.mov,.mkv"
+                    aria-label="Open File Upload"
                     onChange={(e) => e.target.files && handleFileProcessing(e.target.files)}
                   />
                 </div>
@@ -1054,8 +1055,10 @@ export function App() {
             {homeTab === 'generate' && (
               <div className="w-full max-w-sm flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="bg-primary-50 dark:bg-primary-900/10 p-3 rounded-xl border border-primary-100 dark:border-primary-800/30">
-                  <label className="block text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-1.5">Prompt / Topic</label>
+                  <label htmlFor="gen-prompt" className="block text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-1.5">Prompt / Topic</label>
                   <textarea
+                    id="gen-prompt"
+                    name="gen-prompt"
                     value={genPrompt}
                     onChange={(e) => setGenPrompt(e.target.value)}
                     placeholder="A pop song about neon lights..."
@@ -1064,8 +1067,11 @@ export function App() {
                 </div>
                 <div className="flex gap-2">
                   <select
+                    id="gen-model"
+                    name="gen-model"
                     value={genModel}
                     onChange={(e) => setGenModel(e.target.value)}
+                    aria-label="Generation Model"
                     className="flex-1 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-2 text-xs outline-none"
                   >
                     <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
@@ -1106,8 +1112,11 @@ export function App() {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <select
+                          id="transcribe-model"
+                          name="transcribe-model"
                           value={transcribeModel}
                           onChange={(e) => setTranscribeModel(e.target.value)}
+                          aria-label="Transcription Model"
                           className="w-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-2 py-2 text-xs outline-none"
                         >
                           <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
@@ -1116,8 +1125,11 @@ export function App() {
                       </div>
                       <div>
                         <select
+                          id="transcribe-mode"
+                          name="transcribe-mode"
                           value={transcribeMode}
                           onChange={(e) => setTranscribeMode(e.target.value as any)}
+                          aria-label="Transcription Mode"
                           className="w-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-2 py-2 text-xs outline-none"
                         >
                           <option value="lines">Lines</option>
@@ -1154,6 +1166,7 @@ export function App() {
                       type="file"
                       className="hidden"
                       accept="audio/*,video/*,.mp3,.wav,.ogg,.m4a,.mp4,.webm,.ogv,.mov,.mkv"
+                      aria-label="Upload Media for Transcription"
                       onChange={(e) => e.target.files?.[0] && processMediaFile(e.target.files[0])}
                     />
                   </div>
@@ -1172,9 +1185,11 @@ export function App() {
               </div>
 
               <div className="bg-primary-50 dark:bg-primary-900/10 p-4 rounded-xl border border-primary-100 dark:border-primary-800/20 mb-4">
-                <label className="block text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-2">Gemini API Key</label>
+                <label htmlFor="api-key-home" className="block text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-2">Gemini API Key</label>
                 <input
+                  id="api-key-home"
                   type="password"
+                  name="api-key-home"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder="AIza..."
@@ -1216,6 +1231,8 @@ export function App() {
           <div className="flex flex-col min-w-0 flex-1 max-w-[140px] sm:max-w-none">
             <input
               type="text"
+              name="file-name"
+              aria-label="File Name"
               value={fileData.name}
               onChange={(e) => setFileData({ ...fileData, name: e.target.value })}
               className="font-semibold text-sm leading-tight w-full bg-transparent outline-none border-b border-transparent focus:border-primary-500 transition p-0 truncate"
@@ -1426,8 +1443,9 @@ export function App() {
                     </h4>
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs font-medium text-neutral-500 mb-1.5 ml-1">Model</label>
+                        <label htmlFor="retranscribe-model" className="block text-xs font-medium text-neutral-500 mb-1.5 ml-1">Model</label>
                         <select
+                          id="retranscribe-model"
                           value={sidebarTranscribeModel}
                           onChange={(e) => setSidebarTranscribeModel(e.target.value)}
                           className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500/20"
@@ -1458,7 +1476,7 @@ export function App() {
                   <p className="text-sm text-neutral-500 mb-6">Load audio/video to sync or transcribe.</p>
                   <label className="px-5 py-2.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 rounded-lg text-sm font-medium cursor-pointer transition">
                     Load Media
-                    <input type="file" className="hidden" accept="audio/*,video/*" onChange={(e) => e.target.files?.[0] && processMediaFile(e.target.files[0])} />
+                    <input type="file" name="load-media-home" className="hidden" accept="audio/*,video/*" aria-label="Load Media" onChange={(e) => e.target.files?.[0] && processMediaFile(e.target.files[0])} />
                   </label>
                 </div>
               )}
@@ -1472,11 +1490,13 @@ export function App() {
               <h3 className="font-bold mb-4 text-neutral-700 dark:text-neutral-300">File Metadata</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-500 mb-1.5 uppercase">Title</label>
+                  <label htmlFor="meta-title" className="block text-xs font-semibold text-neutral-500 mb-1.5 uppercase">Title</label>
                   <div className="flex items-center bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden focus-within:ring-2 ring-primary-500/50">
                     <span className="pl-3 text-neutral-400"><Type size={16} /></span>
                     <input
+                      id="meta-title"
                       type="text"
+                      name="meta-title"
                       className="w-full bg-transparent p-2.5 outline-none text-sm"
                       placeholder="Song Title"
                       value={metadata.title}
@@ -1485,11 +1505,13 @@ export function App() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-500 mb-1.5 uppercase">Artist</label>
+                  <label htmlFor="meta-artist" className="block text-xs font-semibold text-neutral-500 mb-1.5 uppercase">Artist</label>
                   <div className="flex items-center bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden focus-within:ring-2 ring-primary-500/50">
                     <span className="pl-3 text-neutral-400"><User size={16} /></span>
                     <input
+                      id="meta-artist"
                       type="text"
+                      name="meta-artist"
                       className="w-full bg-transparent p-2.5 outline-none text-sm"
                       placeholder="Artist Name"
                       value={metadata.artist}
@@ -1498,11 +1520,13 @@ export function App() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-500 mb-1.5 uppercase">Album</label>
+                  <label htmlFor="meta-album" className="block text-xs font-semibold text-neutral-500 mb-1.5 uppercase">Album</label>
                   <div className="flex items-center bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden focus-within:ring-2 ring-primary-500/50">
                     <span className="pl-3 text-neutral-400"><Disc size={16} /></span>
                     <input
+                      id="meta-album"
                       type="text"
+                      name="meta-album"
                       className="w-full bg-transparent p-2.5 outline-none text-sm"
                       placeholder="Album Name"
                       value={metadata.album}
@@ -1511,11 +1535,13 @@ export function App() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-500 mb-1.5 uppercase">Creator (By)</label>
+                  <label htmlFor="meta-creator" className="block text-xs font-semibold text-neutral-500 mb-1.5 uppercase">Creator (By)</label>
                   <div className="flex items-center bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden focus-within:ring-2 ring-primary-500/50">
                     <span className="pl-3 text-neutral-400"><Settings2 size={16} /></span>
                     <input
+                      id="meta-creator"
                       type="text"
+                      name="meta-creator"
                       className="w-full bg-transparent p-2.5 outline-none text-sm"
                       placeholder="LRC Creator"
                       value={metadata.by}
@@ -1550,8 +1576,10 @@ export function App() {
                   <span className="text-xs font-medium hidden lg:inline">Load</span>
                   <input
                     type="file"
+                    name="load-media-toolbar"
                     className="hidden"
                     accept="audio/*,video/*,.mp3,.wav,.ogg,.m4a,.mp4,.webm,.ogv,.mov,.mkv"
+                    aria-label="Load Media"
                     onChange={(e) => e.target.files?.[0] && processMediaFile(e.target.files[0])}
                   />
                 </label>
@@ -1562,8 +1590,10 @@ export function App() {
                   <span className="text-xs font-medium hidden lg:inline">Open</span>
                   <input
                     type="file"
+                    name="open-file-toolbar"
                     className="hidden"
                     accept=".lrc,.srt,.vtt,.xml,.ttml,.txt,.json"
+                    aria-label="Open File"
                     onChange={(e) => e.target.files?.[0] && processSubtitleFile(e.target.files[0])}
                   />
                 </label>
@@ -1612,10 +1642,13 @@ export function App() {
 
                 {/* TTS Language Selector */}
                 <select
+                  id="tts-language-selector"
+                  name="tts-language-selector"
                   value={ttsLanguage}
                   onChange={(e) => setTtsLanguage(e.target.value)}
                   className="bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 px-2 py-1.5 rounded-lg text-xs font-medium border-none outline-none focus:ring-2 focus:ring-primary-500/50 cursor-pointer max-w-[150px] truncate"
                   title="TTS Voice"
+                  aria-label="TTS Language and Voice"
                 >
                   <option value="auto">Select TTS Lang</option>
                   {availableVoices.map(voice => (
@@ -1646,6 +1679,8 @@ export function App() {
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
                 <input
                   type="text"
+                  name="search-query"
+                  aria-label="Search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search..."
@@ -1665,9 +1700,9 @@ export function App() {
 
           {isFindReplaceOpen && (
             <div className="flex-none p-3 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap gap-2 items-center animate-in slide-in-from-top-2">
-              <input type="text" placeholder="Find..." value={findText} onChange={(e) => setFindText(e.target.value)} className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
+              <input type="text" name="find-text" aria-label="Find Text" placeholder="Find..." value={findText} onChange={(e) => setFindText(e.target.value)} className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
               <ArrowUpDown size={16} className="text-neutral-400" />
-              <input type="text" placeholder="Replace with..." value={replaceText} onChange={(e) => setReplaceText(e.target.value)} className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
+              <input type="text" name="replace-text" aria-label="Replace Text" placeholder="Replace with..." value={replaceText} onChange={(e) => setReplaceText(e.target.value)} className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
               <button onClick={handleReplaceAll} className="px-3 py-1.5 bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 rounded-lg text-sm font-medium transition">Replace All</button>
               <button onClick={() => setIsFindReplaceOpen(false)} className="ml-auto p-1 text-neutral-400 hover:text-neutral-600"><X size={18} /></button>
             </div>
@@ -1724,10 +1759,12 @@ export function App() {
                 <div className="flex-1 flex flex-col justify-center">
                   <input
                     type="range"
+                    name="seek-slider"
                     min="0"
                     max={duration}
                     value={currentTime}
                     onChange={handleSliderSeek}
+                    aria-label="Seek Time"
                     className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full appearance-none cursor-pointer accent-primary-600 hover:accent-primary-500"
                   />
                   <div className="flex justify-between text-[10px] font-mono text-neutral-400 mt-1">
@@ -1746,11 +1783,13 @@ export function App() {
                   </button>
                   <input
                     type="range"
+                    name="volume-slider"
                     min="0"
                     max="1"
                     step="0.05"
                     value={isMuted ? 0 : volume}
                     onChange={handleVolumeChange}
+                    aria-label="Volume Control"
                     className="w-full h-1 bg-neutral-200 dark:bg-neutral-700 rounded-full appearance-none cursor-pointer accent-neutral-500 hover:accent-neutral-700 dark:hover:accent-neutral-300"
                   />
                 </div>
@@ -1784,9 +1823,11 @@ export function App() {
             </div>
 
             <div className="bg-primary-50 dark:bg-primary-900/10 p-4 rounded-xl border border-primary-100 dark:border-primary-800/20 mb-4">
-              <label className="block text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-2">Gemini API Key</label>
+              <label htmlFor="api-key-main" className="block text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-2">Gemini API Key</label>
               <input
+                id="api-key-main"
                 type="password"
+                name="api-key-main"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="AIza..."
@@ -1815,7 +1856,7 @@ export function App() {
               <button onClick={() => { shiftAllTimes(100); setIsShiftModalOpen(false); }} className="w-full py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm hover:bg-neutral-200 dark:hover:bg-neutral-700 transition">+100ms</button>
               <button onClick={() => { shiftAllTimes(-100); setIsShiftModalOpen(false); }} className="w-full py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm hover:bg-neutral-200 dark:hover:bg-neutral-700 transition">-100ms</button>
               <div className="flex gap-2 pt-2">
-                <input type="number" value={customShiftAmount} onChange={(e) => setCustomShiftAmount(Number(e.target.value))} placeholder="ms" className="flex-1 px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm" />
+                <input type="number" name="shift-amount" value={customShiftAmount} onChange={(e) => setCustomShiftAmount(Number(e.target.value))} placeholder="ms" aria-label="Shift Amount (Milliseconds)" className="flex-1 px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm" />
                 <button onClick={() => { shiftAllTimes(customShiftAmount); setIsShiftModalOpen(false); }} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium">Shift</button>
               </div>
             </div>
