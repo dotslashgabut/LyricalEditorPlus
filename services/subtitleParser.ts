@@ -20,7 +20,7 @@ export const detectFormat = (filename: string, content: string): SubtitleFormat 
   if (trimmed.startsWith('WEBVTT')) return SubtitleFormat.VTT;
   if (content.includes('http://www.w3.org/ns/ttml')) return SubtitleFormat.TTML;
   if (/^\[\d{2}:\d{2}\.\d{2}\]/.test(content)) return SubtitleFormat.LRC;
-  
+
   return SubtitleFormat.SRT; // Default
 };
 
@@ -42,11 +42,11 @@ const decodeEntities = (str: string) => {
 const parseLRC = (content: string): ParseResult => {
   const lines = content.split(/\r?\n/);
   const cues: Cue[] = [];
-  const regex = /\[(\d{2}:\d{2}(?:\.\d{2,3})?)\](.*)/;
+  const regex = /\[(\d{1,2}:\d{2}(?:\.\d{2,3})?)\](.*)/;
   // Improved regex: Allow optional hours (H:MM:SS), and handle various bracket styles if needed
   // This matches <00:00.00> or <00:00:00.000>
   const wordRegex = /<(\d{1,2}:\d{2}(?::\d{2})?(?:\.\d{1,3})?)>([^<]*)/g;
-  
+
   const metadata: Metadata = {};
 
   // Extract Metadata
@@ -64,27 +64,27 @@ const parseLRC = (content: string): ParseResult => {
     if (match) {
       const start = timeToMs(match[1]);
       let rawText = match[2];
-      
+
       // Decode entities immediately
       rawText = decodeEntities(rawText);
 
       // Check for Enhanced LRC words
       let text = rawText;
       let words: Word[] = [];
-      
+
       // If content has <time> tag
       if (rawText.includes('<') && rawText.includes('>')) {
-         let wordMatch;
-         // Clean text from tags for main display
-         text = rawText.replace(/<[^>]+>/g, '').trim();
-         
-         while ((wordMatch = wordRegex.exec(rawText)) !== null) {
-           words.push({
-             id: `w-${index}-${wordMatch.index}`,
-             start: timeToMs(wordMatch[1]),
-             text: wordMatch[2].trim()
-           });
-         }
+        let wordMatch;
+        // Clean text from tags for main display
+        text = rawText.replace(/<[^>]+>/g, '').trim();
+
+        while ((wordMatch = wordRegex.exec(rawText)) !== null) {
+          words.push({
+            id: `w-${index}-${wordMatch.index}`,
+            start: timeToMs(wordMatch[1]),
+            text: wordMatch[2].trim()
+          });
+        }
       } else {
         text = text.trim();
       }
@@ -115,7 +115,7 @@ const parseSRT = (content: string): ParseResult => {
     // Find timeline
     let timeLineIndex = 0;
     if (lines[0].match(/^\d+$/)) timeLineIndex = 1;
-    
+
     if (!lines[timeLineIndex]) return null;
 
     const times = lines[timeLineIndex].split('-->');
@@ -141,14 +141,14 @@ const parseVTT = (content: string): ParseResult => {
   const lines = content.trim().replace(/\r\n/g, '\n').split('\n');
   const cues: Cue[] = [];
   const metadata: Metadata = {};
-  
+
   let currentCue: Partial<Cue> | null = null;
   let textBuffer: string[] = [];
   let wordBuffer: Word[] = [];
-  
+
   // Basic metadata extraction from header comments
   lines.forEach(line => {
-      if (line.startsWith('Note Title:')) metadata.title = line.replace('Note Title:', '').trim();
+    if (line.startsWith('Note Title:')) metadata.title = line.replace('Note Title:', '').trim();
   });
 
   // Skip header
@@ -157,7 +157,7 @@ const parseVTT = (content: string): ParseResult => {
 
   for (; i < lines.length; i++) {
     const line = lines[i].trim();
-    
+
     if (line.includes('-->')) {
       if (currentCue && textBuffer.length > 0) {
         currentCue.text = decodeEntities(textBuffer.join('\n'));
@@ -166,11 +166,11 @@ const parseVTT = (content: string): ParseResult => {
         textBuffer = [];
         wordBuffer = [];
       }
-      
+
       const times = line.split('-->');
       const start = timeToMs(times[0].trim().split(' ')[0]);
       const end = timeToMs(times[1].trim().split(' ')[0]);
-      
+
       currentCue = {
         id: `vtt-${i}`,
         start,
@@ -188,54 +188,54 @@ const parseVTT = (content: string): ParseResult => {
       }
     } else if (currentCue) {
       // VTT Karaoke / timestamps
-      const timestampRegex = /<(\d{2}:\d{2}(?::\d{2})?[.,]\d{3})>/g;
-      
+      const timestampRegex = /<(\d{1,2}:\d{2}(?::\d{1,2})?[.,]\d{1,3})>/g;
+
       if (timestampRegex.test(line)) {
         // We need to parse words and times
         // The line might look like: <00:01.000>Word <00:01.500>Word2
-        
+
         timestampRegex.lastIndex = 0;
         const parts = line.split(timestampRegex);
         // parts[0] = text before first timestamp (often empty)
         // parts[1] = first timestamp
         // parts[2] = text after first timestamp
         // ...
-        
+
         let currentTime = currentCue.start || 0;
-        
+
         for (let k = 0; k < parts.length; k++) {
-           const part = parts[k];
-           // If it matches timestamp format, it's a time. Else it is text.
-           // However, split separates by the capturing group.
-           // Index 0: Text
-           // Index 1: Time
-           // Index 2: Text
-           // Index 3: Time
-           
-           if (k % 2 === 1) { 
-               // This is a timestamp
-               currentTime = timeToMs(part);
-           } else {
-               // This is text
-               const cleanText = part.replace(/<[^>]+>/g, '').trim(); // Remove other tags
-               const decodedText = decodeEntities(cleanText);
-               
-               if (decodedText) {
-                   // Add word with current timestamp
-                   wordBuffer.push({
-                       id: `vtt-w-${i}-${wordBuffer.length}`,
-                       text: decodedText,
-                       start: currentTime
-                       // end will be next timestamp or cue end
-                   });
-               }
-           }
+          const part = parts[k];
+          // If it matches timestamp format, it's a time. Else it is text.
+          // However, split separates by the capturing group.
+          // Index 0: Text
+          // Index 1: Time
+          // Index 2: Text
+          // Index 3: Time
+
+          if (k % 2 === 1) {
+            // This is a timestamp
+            currentTime = timeToMs(part);
+          } else {
+            // This is text
+            const cleanText = part.replace(/<[^>]+>/g, '').trim(); // Remove other tags
+            const decodedText = decodeEntities(cleanText);
+
+            if (decodedText) {
+              // Add word with current timestamp
+              wordBuffer.push({
+                id: `vtt-w-${i}-${wordBuffer.length}`,
+                text: decodedText,
+                start: currentTime
+                // end will be next timestamp or cue end
+              });
+            }
+          }
         }
-        
+
         // Clean line for main text
         const cleanLine = line.replace(/<[^>]+>/g, '').trim();
         textBuffer.push(cleanLine);
-        
+
       } else {
         const cleanLine = line.replace(/<[^>]+>/g, '').trim();
         textBuffer.push(cleanLine);
@@ -267,7 +267,7 @@ const parseTTML = (content: string): ParseResult => {
       } else if (child.nodeType === Node.ELEMENT_NODE) {
         const el = child as Element;
         const tagName = el.localName ? el.localName.toLowerCase() : el.tagName.toLowerCase();
-        
+
         if (tagName === 'br') {
           result += '\n';
         } else if (tagName !== 'metadata' && tagName !== 'head' && tagName !== 'style') {
@@ -283,31 +283,31 @@ const parseTTML = (content: string): ParseResult => {
     const begin = p.getAttribute("begin");
     const end = p.getAttribute("end");
     const dur = p.getAttribute("dur");
-    
+
     // Extract text and words if spans exist
     const words: Word[] = [];
     const spans = p.getElementsByTagName("span");
-    
+
     if (spans.length > 0) {
-        for (let j = 0; j < spans.length; j++) {
-            const span = spans[j];
-            const spanBegin = span.getAttribute("begin");
-            const spanEnd = span.getAttribute("end");
-            const text = span.textContent || "";
-            if (text.trim()) {
-                words.push({
-                    id: `ttml-w-${i}-${j}`,
-                    text: decodeEntities(text.trim()),
-                    start: spanBegin ? timeToMs(spanBegin) : undefined,
-                    end: spanEnd ? timeToMs(spanEnd) : undefined
-                });
-            }
+      for (let j = 0; j < spans.length; j++) {
+        const span = spans[j];
+        const spanBegin = span.getAttribute("begin");
+        const spanEnd = span.getAttribute("end");
+        const text = span.textContent || "";
+        if (text.trim()) {
+          words.push({
+            id: `ttml-w-${i}-${j}`,
+            text: decodeEntities(text.trim()),
+            start: spanBegin ? timeToMs(spanBegin) : undefined,
+            end: spanEnd ? timeToMs(spanEnd) : undefined
+          });
         }
+      }
     }
 
     const rawText = extractText(p);
-    const text = rawText.replace(/\s+/g, ' ').trim(); 
-    
+    const text = rawText.replace(/\s+/g, ' ').trim();
+
     const startMs = timeToMs(begin || "0");
     let endMs = end ? timeToMs(end) : startMs + 2000;
     if (dur) endMs = startMs + timeToMs(dur);
@@ -324,42 +324,42 @@ const parseTTML = (content: string): ParseResult => {
 };
 
 const parseJSON = (content: string): ParseResult => {
-    try {
-        const parsed = JSON.parse(content);
-        const cuesRaw = Array.isArray(parsed) ? parsed : (parsed.cues || []);
-        const metadata = (!Array.isArray(parsed) && parsed.metadata) ? parsed.metadata : { title: '', artist: '', album: '', by: '' };
-        
-        // Sanitize: ensure start/end are numbers and words are processed
-        const cues = cuesRaw.map((c: any, i: number) => {
-            const start = typeof c.start === 'number' ? c.start : timeToMs(String(c.start || '0'));
-            const end = typeof c.end === 'number' ? c.end : timeToMs(String(c.end || '0'));
-            const text = decodeEntities(c.text || '');
-            
-            let words: Word[] | undefined = undefined;
-            if (Array.isArray(c.words)) {
-                words = c.words.map((w: any, wi: number) => ({
-                    id: w.id || `json-w-${i}-${wi}`,
-                    text: decodeEntities(w.text || ''),
-                    // Ensure word timestamps are also numbers
-                    start: typeof w.start === 'number' ? w.start : timeToMs(String(w.start || '0')),
-                    end: typeof w.end === 'number' ? w.end : (w.end ? timeToMs(String(w.end)) : undefined)
-                }));
-            }
+  try {
+    const parsed = JSON.parse(content);
+    const cuesRaw = Array.isArray(parsed) ? parsed : (parsed.cues || []);
+    const metadata = (!Array.isArray(parsed) && parsed.metadata) ? parsed.metadata : { title: '', artist: '', album: '', by: '' };
 
-            return {
-                id: c.id || `json-${i}`,
-                start,
-                end,
-                text,
-                words
-            };
-        });
+    // Sanitize: ensure start/end are numbers and words are processed
+    const cues = cuesRaw.map((c: any, i: number) => {
+      const start = typeof c.start === 'number' ? c.start : timeToMs(String(c.start || '0'));
+      const end = typeof c.end === 'number' ? c.end : timeToMs(String(c.end || '0'));
+      const text = decodeEntities(c.text || '');
 
-        return { cues, metadata };
-    } catch (e) {
-        console.error("JSON parse error", e);
-        return { cues: [], metadata: {} };
-    }
+      let words: Word[] | undefined = undefined;
+      if (Array.isArray(c.words)) {
+        words = c.words.map((w: any, wi: number) => ({
+          id: w.id || `json-w-${i}-${wi}`,
+          text: decodeEntities(w.text || ''),
+          // Ensure word timestamps are also numbers
+          start: typeof w.start === 'number' ? w.start : timeToMs(String(w.start || '0')),
+          end: typeof w.end === 'number' ? w.end : (w.end ? timeToMs(String(w.end)) : undefined)
+        }));
+      }
+
+      return {
+        id: c.id || `json-${i}`,
+        start,
+        end,
+        text,
+        words
+      };
+    });
+
+    return { cues, metadata };
+  } catch (e) {
+    console.error("JSON parse error", e);
+    return { cues: [], metadata: {} };
+  }
 }
 
 // --- Stringifiers ---
@@ -382,7 +382,7 @@ const stringifyLRC = (cues: Cue[], enhanced: boolean = false, metadata?: Metadat
     }
     return line;
   }).join('\n');
-  
+
   return header + body;
 };
 
@@ -400,9 +400,9 @@ const stringifyVTT = (cues: Cue[], karaoke: boolean = false, metadata?: Metadata
   return header + cues.map(cue => {
     let text = cue.text;
     if (karaoke && cue.words && cue.words.length > 0) {
-       text = cue.words.map(w => {
-         return `<${msToVtt(w.start || cue.start)}>${w.text}`;
-       }).join(' ');
+      text = cue.words.map(w => {
+        return `<${msToVtt(w.start || cue.start)}>${w.text}`;
+      }).join(' ');
     }
     return `${msToVtt(cue.start)} --> ${msToVtt(cue.end)}\n${text}\n`;
   }).join('\n');
@@ -410,9 +410,9 @@ const stringifyVTT = (cues: Cue[], karaoke: boolean = false, metadata?: Metadata
 
 const escapeXML = (str: string) => {
   return str.replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-            // Quotes (' and ") do not need to be escaped in XML text content.
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  // Quotes (' and ") do not need to be escaped in XML text content.
 };
 
 const stringifyTTML = (cues: Cue[], karaoke: boolean = false, metadata?: Metadata): string => {
@@ -423,7 +423,7 @@ const stringifyTTML = (cues: Cue[], karaoke: boolean = false, metadata?: Metadat
     if (metadata.artist) metaItems += `      <ttm:agent type="person" role="artist">${escapeXML(metadata.artist)}</ttm:agent>\n`;
     if (metadata.album) metaItems += `      <ttm:desc>Album: ${escapeXML(metadata.album)}</ttm:desc>\n`;
     if (metadata.by) metaItems += `      <ttm:copyright>By: ${escapeXML(metadata.by)}</ttm:copyright>\n`;
-    
+
     if (metaItems) {
       head = `
   <head>
@@ -435,28 +435,28 @@ ${metaItems}    </metadata>
 
   const body = cues.map(cue => {
     let content = escapeXML(cue.text).replace(/\n/g, '<br/>');
-    
+
     if (karaoke && cue.words && cue.words.length > 0) {
-       // TTML Logic: Use absolute timestamps for spans, matching the paragraph context.
-       const spans = cue.words.map((w, i, arr) => {
-         const wordStart = w.start || cue.start;
-         let wordEnd = w.end || (wordStart + 300);
-         
-         // Fix overlap for export: Clamp end time to next word's start if overlapping
-         if (i < arr.length - 1) {
-             const nextWord = arr[i + 1];
-             const nextStart = nextWord.start || wordEnd; 
-             if (wordEnd > nextStart) {
-                 wordEnd = nextStart;
-             }
-         }
-         
-         return `<span begin="${msToVtt(wordStart)}" end="${msToVtt(wordEnd)}">${escapeXML(w.text)}</span>`;
-       });
-       // Replace raw text with spans
-       content = '\n' + spans.map(s => `        ${s}`).join('\n') + '\n      ';
+      // TTML Logic: Use absolute timestamps for spans, matching the paragraph context.
+      const spans = cue.words.map((w, i, arr) => {
+        const wordStart = w.start || cue.start;
+        let wordEnd = w.end || (wordStart + 300);
+
+        // Fix overlap for export: Clamp end time to next word's start if overlapping
+        if (i < arr.length - 1) {
+          const nextWord = arr[i + 1];
+          const nextStart = nextWord.start || wordEnd;
+          if (wordEnd > nextStart) {
+            wordEnd = nextStart;
+          }
+        }
+
+        return `<span begin="${msToVtt(wordStart)}" end="${msToVtt(wordEnd)}">${escapeXML(w.text)}</span>`;
+      });
+      // Replace raw text with spans
+      content = '\n' + spans.map(s => `        ${s}`).join('\n') + '\n      ';
     }
-    
+
     return `      <p begin="${msToVtt(cue.start)}" end="${msToVtt(cue.end)}">${content}</p>`;
   }).join('\n');
 
@@ -478,7 +478,7 @@ const stringifyTXT = (cues: Cue[]): string => {
 
   for (let i = 0; i < cues.length; i++) {
     result += cues[i].text + '\n';
-    
+
     // Check for gap to next cue to insert blank line
     if (i < cues.length - 1) {
       const currentEnd = cues[i].end;
