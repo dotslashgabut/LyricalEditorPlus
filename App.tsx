@@ -79,7 +79,7 @@ export function App() {
 
   // App State
   const [fileData, setFileData] = useState<FileData | null>(null);
-  const [lastActiveFileData, setLastActiveFileData] = useState<FileData | null>(null);
+  const [lastActiveFileData, setLastActiveFileData] = useState<{ fileData: FileData, cues: Cue[], metadata: Metadata } | null>(null);
   const [cues, setCues] = useState<Cue[]>([]);
   const [viewMode, setViewMode] = useState<'line' | 'word'>('line');
   const [metadata, setMetadata] = useState<Metadata>({ title: '', artist: '', album: '', by: '' });
@@ -184,6 +184,7 @@ export function App() {
   const [transcribeModel, setTranscribeModel] = useState('gemini-2.5-flash');
   const [sidebarTranscribeModel, setSidebarTranscribeModel] = useState('gemini-2.5-flash'); // Separate state for sidebar
   const [transcribeMode, setTranscribeMode] = useState<'lines' | 'words'>('lines');
+  const [sidebarTranscribeMode, setSidebarTranscribeMode] = useState<'lines' | 'words'>('lines'); // Separate state for sidebar mode
   const [isTranscribing, setIsTranscribing] = useState(false);
   const transcriptionAbortCtrl = useRef<AbortController | null>(null);
 
@@ -537,7 +538,7 @@ export function App() {
   };
 
   // Re-usable transcribe function
-  const runTranscription = async (model: string) => {
+  const runTranscription = async (model: string, mode: 'lines' | 'words') => {
     if (!mediaFile) return;
 
     // Stop any existing
@@ -552,7 +553,7 @@ export function App() {
     try {
       const cues = await transcribeAudio(mediaFile, {
         model: model,
-        mode: transcribeMode
+        mode: mode
       }, controller.signal);
 
       if (cues.length === 0) {
@@ -564,7 +565,7 @@ export function App() {
         if (!fileData) {
           setFileData({
             name: 'Transcribed Lyrics',
-            format: transcribeMode === 'words' ? SubtitleFormat.LRC_ENHANCED : SubtitleFormat.LRC,
+            format: mode === 'words' ? SubtitleFormat.LRC_ENHANCED : SubtitleFormat.LRC,
             content: ''
           });
           setMetadata({ title: '', artist: '', album: '', by: '' });
@@ -573,7 +574,7 @@ export function App() {
         setCues(cues);
         setHistory([cues]);
         setHistoryIndex(0);
-        if (transcribeMode === 'words') {
+        if (mode === 'words') {
           setViewMode('word');
         }
       }
@@ -593,14 +594,14 @@ export function App() {
     }
   };
 
-  const handleHomeTranscribe = () => runTranscription(transcribeModel);
+  const handleHomeTranscribe = () => runTranscription(transcribeModel, transcribeMode);
   const handleSidebarTranscribe = () => {
     if (cues.length > 0) {
       if (!window.confirm("Re-transcribing will overwrite all current lyrics/subtitles. This action cannot be undone unless you have exported your work.\n\nDo you want to continue?")) {
         return;
       }
     }
-    runTranscription(sidebarTranscribeModel);
+    runTranscription(sidebarTranscribeModel, sidebarTranscribeMode);
   };
 
   const handleExport = (format: SubtitleFormat) => {
@@ -975,7 +976,15 @@ export function App() {
           {lastActiveFileData && (
             <div className="mb-6 w-full animate-in slide-in-from-top-2 fade-in duration-300">
               <button
-                onClick={() => setFileData(lastActiveFileData)}
+                onClick={() => {
+                  if (lastActiveFileData) {
+                    setFileData(lastActiveFileData.fileData);
+                    setCues(lastActiveFileData.cues);
+                    setMetadata(lastActiveFileData.metadata);
+                    setHistory([lastActiveFileData.cues]);
+                    setHistoryIndex(0);
+                  }
+                }}
                 className="w-full p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl shadow-lg hover:shadow-xl hover:border-primary-500 dark:hover:border-primary-500 transition-all group text-left flex items-center gap-4 relative overflow-hidden"
               >
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500"></div>
@@ -984,9 +993,9 @@ export function App() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Resume Session</div>
-                  <div className="font-semibold text-neutral-900 dark:text-neutral-100 truncate text-base">{lastActiveFileData.name}</div>
+                  <div className="font-semibold text-neutral-900 dark:text-neutral-100 truncate text-base">{lastActiveFileData.fileData.name}</div>
                   <div className="text-xs text-neutral-500 flex items-center gap-2 mt-0.5">
-                    <span>{cues.length} lines</span>
+                    <span>{lastActiveFileData.cues.length} lines</span>
                     <span>•</span>
                     <span>{mediaName ? 'Media Loaded' : 'No Media'}</span>
                   </div>
@@ -1076,7 +1085,6 @@ export function App() {
                   >
                     <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                     <option value="gemini-3-flash-preview">Gemini 3.0 Flash</option>
-                    <option value="gemini-3-pro-preview">Gemini 3.0 Pro</option>
                   </select>
                   <button
                     onClick={handleHomeGenerate}
@@ -1220,7 +1228,7 @@ export function App() {
         <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
           <button
             onClick={() => {
-              setLastActiveFileData(fileData);
+              setLastActiveFileData({ fileData, cues, metadata });
               setFileData(null);
             }}
             className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-neutral-500 transition shrink-0"
@@ -1442,17 +1450,31 @@ export function App() {
                       <Mic size={16} className="text-primary-500" /> AI Re-Transcribe
                     </h4>
                     <div className="space-y-3">
-                      <div>
-                        <label htmlFor="retranscribe-model" className="block text-xs font-medium text-neutral-500 mb-1.5 ml-1">Model</label>
-                        <select
-                          id="retranscribe-model"
-                          value={sidebarTranscribeModel}
-                          onChange={(e) => setSidebarTranscribeModel(e.target.value)}
-                          className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500/20"
-                        >
-                          <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                          <option value="gemini-3-flash-preview">Gemini 3.0 Flash</option>
-                        </select>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label htmlFor="retranscribe-model" className="block text-xs font-medium text-neutral-500 mb-1.5 ml-1">Model</label>
+                          <select
+                            id="retranscribe-model"
+                            value={sidebarTranscribeModel}
+                            onChange={(e) => setSidebarTranscribeModel(e.target.value)}
+                            className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl px-2 py-2 text-xs outline-none focus:ring-2 focus:ring-primary-500/20"
+                          >
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            <option value="gemini-3-flash-preview">Gemini 3.0 Flash</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="retranscribe-mode" className="block text-xs font-medium text-neutral-500 mb-1.5 ml-1">Mode</label>
+                          <select
+                            id="retranscribe-mode"
+                            value={sidebarTranscribeMode}
+                            onChange={(e) => setSidebarTranscribeMode(e.target.value as any)}
+                            className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl px-2 py-2 text-xs outline-none focus:ring-2 focus:ring-primary-500/20"
+                          >
+                            <option value="lines">Lines</option>
+                            <option value="words">Words</option>
+                          </select>
+                        </div>
                       </div>
                       <button
                         onClick={isTranscribing ? stopTranscription : handleSidebarTranscribe}

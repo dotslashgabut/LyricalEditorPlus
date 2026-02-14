@@ -2,6 +2,7 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Cue, Word } from '../types';
+import { timeToMs } from '../utils/timeUtils';
 
 // Initialize Gemini API
 // Using process.env.API_KEY as per instructions
@@ -62,12 +63,14 @@ export const transcribeAudio = async (
 
   const timingInstructions = `
     IMPORTANT TIMING RULES:
-    1. Timestamps must be ABSOLUTE integers in MILLISECONDS from the very start of the file.
-    2. Do NOT reset timestamps at any point. They must strictly increase.
-    3. Correctly calculate time > 1 minute.
-       - 1 minute = 60000 ms
-       - 1 minute 30 seconds = 90000 ms
-       - 2 minutes = 120000 ms
+    1. Timestamps MUST be returned as STRINGS in "MM:SS.mmm" format (e.g., "01:29.014" or "02:06.097").
+    2. These are ABSOLUTE timestamps from the beginning of the audio (0:00.000). 
+    3. Do NOT reset timestamps. They must strictly increase.
+    4. CRITICAL MATH: 1 minute is 60 seconds. 
+       - If you see 2:06 in the audio, the timestamp is "02:06.000".
+       - DO NOT calculate milliseconds yourself. 
+       - AVOID the error where 2:06 becomes 206 seconds. 
+    5. High precision is required for word-level sync.
   `;
 
   const prompt = isWordsMode
@@ -96,8 +99,8 @@ export const transcribeAudio = async (
     type: Type.OBJECT,
     properties: {
       text: { type: Type.STRING },
-      start: { type: Type.INTEGER },
-      end: { type: Type.INTEGER }
+      start: { type: Type.STRING },
+      end: { type: Type.STRING }
     },
     required: ['text', 'start', 'end']
   };
@@ -106,8 +109,8 @@ export const transcribeAudio = async (
     type: Type.OBJECT,
     properties: {
       text: { type: Type.STRING },
-      start: { type: Type.INTEGER },
-      end: { type: Type.INTEGER },
+      start: { type: Type.STRING },
+      end: { type: Type.STRING },
       words: {
         type: Type.ARRAY,
         items: wordSchema
@@ -119,6 +122,20 @@ export const transcribeAudio = async (
   const responseSchema = {
     type: Type.ARRAY,
     items: cueSchema
+  };
+
+  const sanitizeTime = (val: any, fallback: number = 0): number => {
+    const str = String(val || '').trim();
+    if (!str) return fallback;
+
+    // Use project-wide timeToMs utility for consistent parsing
+    const parsed = timeToMs(str);
+    if (parsed > 0 || str === '0' || str.includes('00:00')) return parsed;
+
+    const num = parseFloat(str);
+    if (!isNaN(num)) return Math.round(num);
+
+    return fallback;
   };
 
   try {
@@ -153,18 +170,23 @@ export const transcribeAudio = async (
     if (response.text) {
       const rawCues = JSON.parse(response.text);
       // Map to application Cue type
-      return rawCues.map((c: any, index: number) => ({
-        id: `ai-${index}-${Date.now()}`,
-        start: c.start || 0,
-        end: c.end || 0,
-        text: c.text || '',
-        words: c.words ? c.words.map((w: any, wi: number) => ({
-          id: `ai-w-${index}-${wi}`,
-          text: w.text,
-          start: w.start,
-          end: w.end
-        })) : undefined
-      }));
+      return rawCues.map((c: any, index: number) => {
+        const start = sanitizeTime(c.start, 0);
+        const end = sanitizeTime(c.end, start + 2000);
+
+        return {
+          id: `ai-${index}-${Date.now()}`,
+          start,
+          end,
+          text: c.text || '',
+          words: c.words ? c.words.map((w: any, wi: number) => ({
+            id: `ai-w-${index}-${wi}`,
+            text: w.text,
+            start: sanitizeTime(w.start, start),
+            end: sanitizeTime(w.end, end)
+          })) : undefined
+        };
+      });
     }
     return [];
   } catch (error: any) {

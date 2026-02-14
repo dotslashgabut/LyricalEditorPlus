@@ -100,7 +100,6 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ cues, onApply, onClose }) => 
               >
                 <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                 <option value="gemini-3-flash-preview">Gemini 3.0 Flash</option>
-                <option value="gemini-3-pro-preview">Gemini 3.0 Pro</option>
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">
                 <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
