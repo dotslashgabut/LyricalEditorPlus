@@ -48,37 +48,37 @@ export const transcribeAudio = async (
   const isWordsMode = options.mode === 'words';
   
   const timingInstructions = `
-    IMPORTANT TIMING RULES:
-    1. Timestamps must be ABSOLUTE integers in MILLISECONDS from the very start of the file.
-    2. Do NOT reset timestamps at any point. They must strictly increase.
-    3. Correctly calculate time > 1 minute.
-       - 1 minute = 60000 ms
-       - 1 minute 30 seconds = 90000 ms
-       - 2 minutes = 120000 ms
+    CRITICAL TIMING INSTRUCTIONS:
+    1. Timestamps are ABSOLUTE milliseconds (ms) from file start (0ms).
+    2. INSTRUMENTAL BREAKS & GAPS: 
+       - When music plays without vocals (solos, intros, bridges), do NOT generate text.
+       - CRITICAL: When vocals resume, the timestamp MUST jump forward to match the actual elapsed time.
+       - Example: If vocals stop at 60000ms and resume after a 20s solo, the next timestamp must be ~80000ms. Do not just continue counting from 60000ms.
+    3. 1 minute = 60000ms. 2 min = 120000ms. Check your time calculations.
   `;
 
   const commonRules = `
     TRANSCRIPTION RULES:
-    1. Transcribe EXACTLY what is spoken/sung. Verbatim.
-    2. REPETITION HANDLING: 
-       - If a word is repeated in the audio (e.g., "baby, baby, baby"), you MUST transcribe all instances.
-       - However, DO NOT hallucinate repetitions. If a word is spoken once, write it ONCE.
-       - STRICTLY AVOID infinite loops or stuttering text that is not in the audio.
-    3. TIMING ACCURACY: 
-       - Timestamps must align perfectly with the spoken word.
-       - Do not generate text for silent or instrumental sections.
-    4. FILLERS: Exclude hesitation sounds (um, ah) unless they are part of the lyrics/style.
+    1. Verbatim transcription. Write exactly what you hear.
+    2. SONG STRUCTURE:
+       - This audio likely contains music. Expect instrumental sections.
+       - Do NOT hallucinate text during instrumental breaks.
+    3. REPETITIONS:
+       - Transcribe sung repetitions (e.g. "baby, baby") exactly as heard.
+       - Do NOT hallucinate infinite loops or stuck text.
+    4. FILLERS: Exclude "um", "ah" unless part of the lyrics.
   `;
 
   const prompt = isWordsMode 
-    ? `Transcribe the audio into a JSON array of cues for lyrics/subtitles.
-       Each cue represents a LINE.
-       CRITICAL: For EACH line, include a "words" array.
-       Each item in "words" must have "text", "start" (ms), and "end" (ms).
+    ? `Transcribe audio to lyrics (JSON).
+       Format: Array of cues (lines).
+       EACH CUE MUST HAVE A "words" ARRAY.
+       Word Schema: { text: string, start: int (ms), end: int (ms) }
        ${timingInstructions}
        ${commonRules}`
-    : `Transcribe the audio into a JSON array of cues for lyrics/subtitles.
-       Each cue is a sentence/line with "text", "start" (ms), and "end" (ms).
+    : `Transcribe audio to lyrics (JSON).
+       Format: Array of cues (lines).
+       Cue Schema: { text: string, start: int (ms), end: int (ms) }
        ${timingInstructions}
        ${commonRules}`;
 
@@ -124,8 +124,8 @@ export const transcribeAudio = async (
       config: {
         responseMimeType: "application/json",
         responseSchema: responseSchema,
-        temperature: 0.0, // Minimal creativity to strict adherence
-        topP: 0.8, // Slightly reduced topP to cut off low-probability loop tokens
+        temperature: 0.0, // Strict adherence to audio
+        topP: 0.8, // Reduced to prevent loop hallucinations
       }
     });
 
