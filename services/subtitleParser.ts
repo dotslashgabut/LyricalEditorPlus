@@ -332,11 +332,12 @@ const parseJSON = (content: string): ParseResult => {
         const parseValue = (val: any) => {
              if (typeof val === 'number') return val;
              if (typeof val === 'string') {
-                 const trimmed = val.trim();
-                 // If purely digits, assume it is milliseconds already stringified
-                 if (/^\d+$/.test(trimmed)) {
-                     return parseInt(trimmed, 10);
+                 const trimmed = val.trim().replace(/,/g, ''); // Remove commas
+                 // If it looks like a number without colons, treat as milliseconds (integer or float)
+                 if (/^\d+(\.\d+)?$/.test(trimmed)) {
+                     return Math.round(parseFloat(trimmed));
                  }
+                 // Otherwise try standard time parser (for HH:MM:SS)
                  return timeToMs(trimmed);
              }
              return 0;

@@ -86,8 +86,8 @@ export const msToVtt = (ms: number): string => {
 export const timeToMs = (timeStr: string): number => {
   if (!timeStr) return 0;
   
-  // Clean string
-  const cleanStr = timeStr.trim();
+  // Clean string and remove commas for safety
+  const cleanStr = timeStr.trim().replace(/,/g, '');
 
   // Check for suffix formats (TTML/XML often uses these)
   if (cleanStr.endsWith('ms')) {
@@ -134,15 +134,13 @@ export const timeToMs = (timeStr: string): number => {
   // Fallback: check if it is just a number
   if (/^\d+(\.\d+)?$/.test(cleanStr)) {
      const val = parseFloat(cleanStr);
-     // Heuristic: If it has a decimal point, assume seconds.
+     // Heuristic: If it has a decimal point, assume seconds (standard practice for unitless time)
      if (cleanStr.includes('.')) {
          return val * 1000;
      }
-     // If it's a large integer (likely ms), return as is? 
-     // Standards say "unitless = seconds". But for internal robustness:
-     // If we are parsing "60000" from a JSON string that meant ms, this will fail if we treat as seconds.
-     // However, timeToMs is primarily for "formatted time strings".
-     // We will stick to standard: Unitless = Seconds.
+     // If it's a large integer, it's ambiguous. Standard says unitless = seconds.
+     // However, for consistency with formatted times, we stick to seconds here.
+     // Caller (AI parser) should handle "raw integer = ms" logic if needed.
      return val * 1000;
   }
 

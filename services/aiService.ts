@@ -37,15 +37,32 @@ export interface TranscriptionOptions {
  * Handles numbers, string numbers ("60000"), and formatted strings ("01:00.000")
  */
 const parseAiTimestamp = (val: any): number => {
-    if (typeof val === 'number') return val;
+    if (typeof val === 'number') return Math.round(val);
     if (typeof val === 'string') {
-        const trimmed = val.trim();
-        // If purely digits, treat as integer milliseconds
-        if (/^\d+$/.test(trimmed)) {
-            return parseInt(trimmed, 10);
+        const trimmed = val.trim().replace(/,/g, '');
+        
+        // If it contains a colon, it's a formatted time string (e.g. 01:00.000)
+        if (trimmed.includes(':')) {
+            return timeToMs(trimmed);
         }
-        // Otherwise try standard time parser
-        return timeToMs(trimmed);
+
+        // If it explicitly says "ms", parse as float
+        if (trimmed.toLowerCase().endsWith('ms')) {
+            return parseFloat(trimmed);
+        }
+        
+        // If it explicitly says "s", parse and convert
+        if (trimmed.toLowerCase().endsWith('s')) {
+            return parseFloat(trimmed) * 1000;
+        }
+
+        // If it's a raw number (integer or float string without unit)
+        // Since we explicitly asked for "int (ms)" in the prompt, we treat unitless numbers as milliseconds.
+        // NOTE: timeToMs usually treats unitless as seconds. We override this here for AI reliability.
+        const num = parseFloat(trimmed);
+        if (!isNaN(num)) {
+            return Math.round(num);
+        }
     }
     return 0;
 };
@@ -68,28 +85,46 @@ export const transcribeAudio = async (
   
   const timingInstructions = `
     CRITICAL TIMING INSTRUCTIONS:
-    1. Timestamps are ABSOLUTE milliseconds (ms) from file start (0ms).
-    2. INSTRUMENTAL BREAKS & GAPS: 
+    1. Timestamps MUST be integers in MILLISECONDS (e.g., 1500, 65000).
+    2. DO NOT use "MM:SS" format. (Correct: 61000. Incorrect: 1:01).
+    3. Timestamps are ABSOLUTE from file start (0ms).
+    4. INSTRUMENTAL BREAKS & GAPS: 
        - When music plays without vocals (solos, intros, bridges), do NOT generate text.
        - CRITICAL: When vocals resume, the timestamp MUST jump forward to match the actual elapsed time.
-       - Example: If vocals stop at 60000ms and resume after a 20s solo, the next timestamp must be ~80000ms. Do not just continue counting from 60000ms.
-    3. 1 minute = 60000ms. 2 min = 120000ms. Check your time calculations.
+       - Example: If vocals stop at 60000 (1 min) and resume after a 20s solo, the next timestamp must be ~80000.
+    5. 1 minute = 60000ms. 
   `;
 
   const commonRules = `
     TRANSCRIPTION RULES:
-    1. Verbatim transcription. Write exactly what you hear.
+    1. STRICT VERBATIM & REPETITIONS (CRITICAL):
+       - You MUST transcribe EVERY repetition of a line, phrase, or chorus EXACTLY as heard.
+       - NEVER summarize repetitions. (e.g. DO NOT write "Chorus x2" or "...").
+       - If a line is sung 4 times, output 4 separate cues with their distinct timestamps.
+       - Skipping repeated lines causes critical timing errors for the rest of the song.
+       
     2. SONG STRUCTURE:
        - This audio likely contains music. Expect instrumental sections.
        - Do NOT hallucinate text during instrumental breaks.
-    3. REPETITIONS:
-       - Transcribe sung repetitions (e.g. "baby, baby") exactly as heard.
-       - Do NOT hallucinate infinite loops or stuck text.
-    4. FILLERS: Exclude "um", "ah" unless part of the lyrics.
+       
+    3. FILLERS: 
+       - Exclude non-lyrical fillers like "um", "ah", or coughing, unless they are intentional stylistic vocalizations (like ad-libs in rap/pop).
+       
+    4. COMPLETENESS:
+       - Ensure the transcription covers the audio from start to finish.
+  `;
+
+  const wordLevelInstructions = `
+    WORD-LEVEL KARAOKE PRECISION (CRITICAL):
+    1. ALIGNMENT: Align the start and end of EACH word precisely to the audio waveform.
+    2. DURATION: Do NOT evenly distribute word durations. Fast words must have short durations.
+    3. SILENCE: If there is a pause between words, the previous word's 'end' must NOT equal the next word's 'start'. Leave a gap.
+    4. ACCURACY: Do not estimate. Listen to the phonemes.
   `;
 
   const prompt = isWordsMode 
-    ? `Transcribe audio to lyrics (JSON).
+    ? `Transcribe audio to lyrics (JSON) with high-precision word-level timestamps.
+       ${wordLevelInstructions}
        Format: Array of cues (lines).
        EACH CUE MUST HAVE A "words" ARRAY.
        Word Schema: { text: string, start: int (ms), end: int (ms) }
@@ -143,8 +178,8 @@ export const transcribeAudio = async (
       config: {
         responseMimeType: "application/json",
         responseSchema: responseSchema,
-        temperature: 0.0, // Strict adherence to audio
-        topP: 0.8, // Reduced to prevent loop hallucinations
+        temperature: 0.0, // Strict 0.0 for maximum audio grounding precision
+        topP: 0.8,
       }
     });
 
