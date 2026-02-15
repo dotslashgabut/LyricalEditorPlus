@@ -16,6 +16,7 @@ interface CueListProps {
   selectedCueIds: Set<string>;
   onToggleSelection: (id: string, shiftKey: boolean) => void;
   onInsert: (index: number) => void;
+  ttsLanguage: string;
 }
 
 // Helper for UI input to handle local state and prevent cursor jumping
@@ -262,7 +263,7 @@ const InsertSeparator = ({ onClick }: { onClick: () => void }) => (
   </div>
 );
 
-const CueList: React.FC<CueListProps> = ({ cues, onChange, onEditWords, currentMillis, onSeek, viewMode, selectedCueIds, onToggleSelection, onInsert }) => {
+const CueList: React.FC<CueListProps> = ({ cues, onChange, onEditWords, currentMillis, onSeek, viewMode, selectedCueIds, onToggleSelection, onInsert, ttsLanguage }) => {
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -338,7 +339,8 @@ const CueList: React.FC<CueListProps> = ({ cues, onChange, onEditWords, currentM
 
       setPlayingTTSId(id);
       try {
-          await playTTS(text);
+          // Pass the selected language
+          await playTTS(text, ttsLanguage);
           // If execution finishes normally (audio ended), clear state
           setPlayingTTSId((current) => current === id ? null : current);
       } catch (e) {

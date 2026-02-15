@@ -349,7 +349,7 @@ export const stopTTS = () => {
     }
 };
 
-export const playTTS = async (text: string) => {
+export const playTTS = async (text: string, lang: string = 'en') => {
     stopTTS(); // Stop any existing playback
     
     const textToSpeak = text.trim();
@@ -357,9 +357,8 @@ export const playTTS = async (text: string) => {
 
     // Use Google Translate's unofficial TTS API
     // client=tw-ob is key to access it freely
-    // tl=en defaults to English. You could make this dynamic based on detected text language if needed.
     const encodedText = encodeURIComponent(textToSpeak);
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=en&client=tw-ob`;
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=${lang}&client=tw-ob`;
 
     return new Promise<void>((resolve, reject) => {
         const audio = new Audio(url);

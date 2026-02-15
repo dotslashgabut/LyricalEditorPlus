@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { FileData, SubtitleFormat, Cue, Word, Metadata } from './types';
 import { detectFormat, parseContent, stringifyContent } from './services/subtitleParser';
@@ -67,8 +69,41 @@ import {
   Zap,
   History,
   Repeat,
-  Square
+  Square,
+  Globe,
+  Check
 } from 'lucide-react';
+
+const LANGUAGES = [
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'es', name: 'Spanish', flag: '🇪🇸' },
+    { code: 'fr', name: 'French', flag: '🇫🇷' },
+    { code: 'de', name: 'German', flag: '🇩🇪' },
+    { code: 'it', name: 'Italian', flag: '🇮🇹' },
+    { code: 'pt', name: 'Portuguese', flag: '🇧🇷' },
+    { code: 'ja', name: 'Japanese', flag: '🇯🇵' },
+    { code: 'ko', name: 'Korean', flag: '🇰🇷' },
+    { code: 'zh', name: 'Chinese', flag: '🇨🇳' },
+    { code: 'ru', name: 'Russian', flag: '🇷🇺' },
+    { code: 'hi', name: 'Hindi', flag: '🇮🇳' },
+    { code: 'ar', name: 'Arabic', flag: '🇸🇦' },
+    { code: 'tr', name: 'Turkish', flag: '🇹🇷' },
+    { code: 'pl', name: 'Polish', flag: '🇵🇱' },
+    { code: 'nl', name: 'Dutch', flag: '🇳🇱' },
+    { code: 'sv', name: 'Swedish', flag: '🇸🇪' },
+    { code: 'id', name: 'Indonesian', flag: '🇮🇩' },
+    { code: 'vi', name: 'Vietnamese', flag: '🇻🇳' },
+    { code: 'th', name: 'Thai', flag: '🇹🇭' },
+    { code: 'el', name: 'Greek', flag: '🇬🇷' },
+    { code: 'he', name: 'Hebrew', flag: '🇮🇱' },
+    { code: 'da', name: 'Danish', flag: '🇩🇰' },
+    { code: 'fi', name: 'Finnish', flag: '🇫🇮' },
+    { code: 'no', name: 'Norwegian', flag: '🇳🇴' },
+    { code: 'hu', name: 'Hungarian', flag: '🇭🇺' },
+    { code: 'cs', name: 'Czech', flag: '🇨🇿' },
+    { code: 'ro', name: 'Romanian', flag: '🇷🇴' },
+    { code: 'uk', name: 'Ukrainian', flag: '🇺🇦' },
+];
 
 export function App() {
   // Theme State - Default to Dark Mode
@@ -138,6 +173,12 @@ export function App() {
 
   // AI Assistant State
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
+
+  // Language Menu State
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
+  const [ttsLanguage, setTtsLanguage] = useState('en');
+  const [languageSearch, setLanguageSearch] = useState('');
+  const languageMenuRef = useRef<HTMLDivElement>(null);
   
   // Home Page AI States
   const [homeTab, setHomeTab] = useState<'upload' | 'generate' | 'transcribe'>('upload');
@@ -209,6 +250,9 @@ export function App() {
       }
       if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
         setIsToolsMenuOpen(false);
+      }
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target as Node)) {
+        setIsLanguageMenuOpen(false);
       }
     };
 
@@ -1168,6 +1212,61 @@ export function App() {
              {darkMode ? <Sun size={18} /> : <Moon size={20} />}
            </button>
 
+           {/* Language Dropdown - Moved to Header */}
+           <div className="relative shrink-0" ref={languageMenuRef}>
+               <button 
+                 onClick={() => { setIsLanguageMenuOpen(!isLanguageMenuOpen); setLanguageSearch(''); }}
+                 className={`p-2.5 rounded-xl transition flex items-center gap-1.5 ${isLanguageMenuOpen ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'}`}
+                 title="TTS Language"
+               >
+                 <Globe size={18} />
+                 <span className="text-[10px] font-bold uppercase w-5 text-center">{ttsLanguage}</span>
+               </button>
+               {isLanguageMenuOpen && (
+                   <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-neutral-900 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100 flex flex-col">
+                       <div className="p-3 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50">
+                           <div className="relative">
+                               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                               <input 
+                                    autoFocus
+                                    type="text" 
+                                    placeholder="Search language..."
+                                    value={languageSearch}
+                                    onChange={(e) => setLanguageSearch(e.target.value)}
+                                    className="w-full pl-8 pr-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-500 transition-all placeholder:text-neutral-400"
+                               />
+                           </div>
+                       </div>
+                       <div className="p-1 max-h-64 overflow-y-auto">
+                           <div className="px-3 py-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Select Language</div>
+                           {LANGUAGES.filter(l => l.name.toLowerCase().includes(languageSearch.toLowerCase()) || l.code.toLowerCase().includes(languageSearch.toLowerCase())).map((lang) => (
+                               <button
+                                  key={lang.code}
+                                  onClick={() => { setTtsLanguage(lang.code); setIsLanguageMenuOpen(false); }}
+                                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition flex items-center justify-between group
+                                    ${ttsLanguage === lang.code 
+                                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium' 
+                                        : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                                    }
+                                  `}
+                               >
+                                   <span className="flex items-center gap-3">
+                                       <span className="text-xl shadow-sm rounded-sm overflow-hidden">{lang.flag}</span>
+                                       <span>{lang.name}</span>
+                                   </span>
+                                   {ttsLanguage === lang.code && <Check size={16} className="text-primary-600 dark:text-primary-400" />}
+                               </button>
+                           ))}
+                           {LANGUAGES.filter(l => l.name.toLowerCase().includes(languageSearch.toLowerCase()) || l.code.toLowerCase().includes(languageSearch.toLowerCase())).length === 0 && (
+                                <div className="p-4 text-center text-neutral-400 text-sm">
+                                    No languages found
+                                </div>
+                           )}
+                       </div>
+                   </div>
+               )}
+           </div>
+
            {/* Tools Menu */}
            <div className="relative" ref={toolsMenuRef}>
               <button 
@@ -1603,6 +1702,7 @@ export function App() {
                         selectedCueIds={selectedCueIds}
                         onToggleSelection={handleToggleSelection}
                         onInsert={insertCue}
+                        ttsLanguage={ttsLanguage}
                    />
                    {/* Spacer for bottom elements (player/status bar) */}
                    <div className={`w-full transition-all duration-300 ${mediaUrl ? 'h-96' : 'h-32'}`} />
@@ -1714,4 +1814,3 @@ export function App() {
     </div>
   );
 }
-
