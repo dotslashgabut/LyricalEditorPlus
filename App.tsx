@@ -397,10 +397,19 @@ export function App() {
     const newSelection = new Set(selectedCueIds);
 
     if (shiftKey && selectedCueIds.size > 0) {
-      // Find range if needed, for now simple toggle is fine or range logic here
-      // Implementing simple toggle for now as per request "select some rows"
-      if (newSelection.has(id)) newSelection.delete(id);
-      else newSelection.add(id);
+      // Find range
+      const lastSelectedId = Array.from(selectedCueIds).pop();
+      if (lastSelectedId) {
+        const lastIdx = cues.findIndex(c => c.id === lastSelectedId);
+        const currIdx = cues.findIndex(c => c.id === id);
+        if (lastIdx !== -1 && currIdx !== -1) {
+          const startIdx = Math.min(lastIdx, currIdx);
+          const endIdx = Math.max(lastIdx, currIdx);
+          for (let i = startIdx; i <= endIdx; i++) {
+            newSelection.add(cues[i].id);
+          }
+        }
+      }
     } else {
       if (newSelection.has(id)) newSelection.delete(id);
       else newSelection.add(id);
@@ -712,8 +721,8 @@ export function App() {
         end: Math.max(0, c.end + ms),
         words: c.words?.map(w => ({
           ...w,
-          start: w.start ? Math.max(0, w.start + ms) : undefined,
-          end: w.end ? Math.max(0, w.end + ms) : undefined
+          start: w.start !== undefined ? Math.max(0, w.start + ms) : undefined,
+          end: w.end !== undefined ? Math.max(0, w.end + ms) : undefined
         }))
       };
     });
@@ -834,6 +843,7 @@ export function App() {
         // Clone the cue object before modifying 'words' to prevent history mutation
         updatedCues[editingWordIndex] = {
           ...updatedCues[editingWordIndex],
+          text: words.map(w => w.text).join(' ').replace(/\s+/g, ' ').trim(),
           words: words
         };
       }
